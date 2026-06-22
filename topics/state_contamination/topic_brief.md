@@ -1,58 +1,84 @@
-# Topic Brief: State Contamination in Long-Horizon Tool-Using Agents
+# Topic Brief: Dual-State Contamination in Software Engineering Agents
+
+> **版本**：v2（2026-03-18 重调研收窄）  
+> 上一版题目「State Contamination in Long-Horizon Tool-Using Agents」过宽，与 CCRM / Wang et al. 2026 术语冲突；本版以 gap_analysis 为准。
+
+---
 
 ## 1. 一句话课题定义
 
-长链路工具型 Agent 在执行任务过程中，如果中间步骤写入了错误状态、错误记忆、错误文件、错误变量或错误环境信息，后续步骤会继续基于这些污染状态推理和行动，导致错误级联；本课题研究如何定义、检测、隔离、回滚和恢复这种状态污染。
+在 **software engineering agent**（如 mini-SWE-agent on SWE-bench Verified）的长链路 tool-use 中，失败 attempt 会同时污染 **ContextState**（message/history）与 **WorldState**（workspace/file edits）；本课题定义并评测这种 **dual-state contamination**，以及 **clean-restart** 相对 **dirty-retry** 的 recovery gap。
 
 ## 2. 核心失败模式
 
-Agent 不是只在最后一步答错，而是在中间某一步产生了错误状态，并把这个错误状态当成后续行动的可靠依据。
+Agent 在中间步骤写入两类不可自动清除的错误状态：
 
-例如：
+| 状态通道 | 典型载体 | 污染表现 |
+|----------|----------|----------|
+| **ContextState** | message history、thought、tool output log | 失败 attempt 留在 context，retry 时 per-step 错误率升高（CCRM） |
+| **WorldState** | repo 文件、workspace、test artifacts | 错误 edit 已落盘，仅清 context 无法恢复；rollback 本地 checkpoint ≠ undo 外部状态（ACRFence） |
 
-- 错误总结了用户偏好；
-- 错误修改了文件内容；
-- 错误更新了数据库字段；
-- 错误记录了任务进度；
-- 错误调用工具后没有验证结果；
-- 错误计划被后续步骤持续继承。
+**Recovery blind spot**：现有 agent 默认 dirty-retry（保留 context + workspace），缺少 contamination-aware clean-restart 协议与评测。
 
 ## 3. 为什么重要
 
-真实 Agent 不是一次性问答，而是长链路执行系统。  
-在长任务中，错误一旦写入状态，后续步骤可能会持续放大错误。  
-现有很多 benchmark 更关注最终任务是否完成，但较少专门评估中间状态被污染后，Agent 是否能发现、隔离、回滚和恢复。
+- CCRM 已在 SWE-bench Verified 上证明 context retry 污染（ε₁/ε₀=7.1），但 **未度量 workspace drift**。
+- SWE-bench 只评最终 patch pass，**看不到 intermediate state 污染与 recovery**。
+- Wang et al. 2026 的 state contamination 限 **memory safety**，不覆盖 executable tool state。
+- 真实 coding agent 部署中，retry 是默认行为；若 recovery blind spot 存在，pass@k 会系统性高估 agent 能力。
 
-## 4. 初始假设
+## 4. 研究边界（收窄后）
 
-现有 ReAct、Plan-and-Execute、memory agent、workflow agent 在状态污染场景下可能存在以下问题：
+### 保留
 
-1. 能发现最终失败，但难以定位污染发生在哪一步；
-2. 能重试当前步骤，但不能回滚被污染的历史状态；
-3. 能使用 memory / scratchpad，但缺少状态来源追踪；
-4. 能 checkpoint，但缺少语义级污染检测；
-5. 长链路越长，错误传播越严重。
+- Software agent / SWE-bench Verified
+- ContextState vs WorldState 双通道
+- dirty-retry vs clean-restart@k vs workspace-reset
+- Recovery Gap、Contamination Rate、World-State Drift 三指标
 
-## 5. 初始研究问题
+### 删除（本轮不做）
 
-RQ1: 长链路工具型 Agent 中，状态污染是否是一个可复现、可度量的系统性失败模式？
+- 泛化「所有 tool agent / web agent / memory agent」
+- Memory toxicity / SPG / laundering（Wang et al. 领地）
+- CCRM 理论重推
+- Security-focused semantic rollback（ACRFence 领地）
+- 新方法 GA-Rollback 复刻
 
-RQ2: 现有 Agent benchmark 是否充分覆盖状态污染、错误传播和恢复能力？
+## 5. 研究问题
 
-RQ3: provenance-aware state tracking / typed state / rollback trigger 是否能降低错误传播并提高恢复成功率？
+**RQ1**：在 SWE-bench Verified 上，dirty-retry 相对 clean-restart@k 的 Recovery Gap 有多大？能否复现 CCRM 方向并扩展到 WorldState？
 
-## 6. 可能贡献
+**RQ2**：ContextState 污染与 WorldState drift 是否解耦（仅清 context 不够）？
 
-- 一个状态污染失败模式定义；
-- 一个小型 benchmark；
-- 一组状态污染指标；
-- 一个状态追踪与恢复机制；
-- 对现有 agent 方法的系统性失败分析。
+**RQ3**：是否存在可操作的 **最小 recovery 协议**（workspace reset + clean context）显著优于默认 retry？
 
-## 7. 当前最大风险
+## 6. 预期贡献（Problem + Benchmark 路径）
 
-- 可能已有工作覆盖了类似问题；
-- 可能被认为只是工程异常处理；
-- benchmark 可能太人工；
-- 方法可能只是 checkpoint / retry 的变体；
-- 很难证明泛化性。
+1. **Dual-State Contamination** 操作化定义（ContextState / WorldState / pollution event / recovery blind spot）
+2. **Contamination-aware eval protocol** on SWE-bench Verified 子集（50–100 题）
+3. **三指标** baseline 结果：Contamination Rate、Recovery Gap、World-State Drift
+4. （可选）轻量 PollutionDetector 触发 clean-restart
+
+## 7. 最危险 related work（必须正面 differentiate）
+
+| 论文 | 关系 |
+|------|------|
+| CCRM (Yang 2026) | 子集：我们只覆盖其 context 通道，扩展 world 通道 + benchmark |
+| Wang et al. 2026 | 不同 scope：memory safety vs executable workspace |
+| GA-Rollback / ACRFence | 方法参照，不做 security/trajectory-only 复刻 |
+
+## 8. 当前最大风险
+
+- 被审稿人判为 CCRM 增量或 retry 工程技巧
+- SWE-bench 数据/评测争议
+- Recovery Gap 效应量不足
+- Benchmark 子集太小
+
+## 9. 与旧版 topic_brief 的差异
+
+| 维度 | 旧版 | 新版 v2 |
+|------|------|---------|
+| 题目 | 长链路工具型 Agent 状态污染（泛） | Dual-State Contamination in SE Agents（窄） |
+| 场景 | web + memory + SWE + DB | **SWE-bench Verified only**（MVP） |
+| 术语 | state contamination（与 Wang et al. 撞名） | **dual-state contamination** + recovery blind spot |
+| 贡献 | 方法+系统+benchmark 全开 | **Problem + Benchmark 优先** |

@@ -6,6 +6,8 @@
 
 最终输出必须判断：这个课题是否值得做、是否已经有人做过、创新性是否足够、能否在公开数据集或可构造 benchmark 上验证、适合投哪些会议，以及我当前能力是否能推进。
 
+**产出方式**：所有调研结果写入 `topics/<topic>/` 下的标准文件，而非只在对话里总结。模板见 `templates/`；workflow 见根目录 `README.md`。
+
 ------
 
 ## 一、调研对象
@@ -131,7 +133,7 @@
 
 ## 三、候选课题评分表
 
-每个课题按 10 分制评分：
+每个课题按 10 分制评分（写入 `decision.md`）：
 
 1. 重要性：这个问题是否影响真实 agent 部署？
 2. 新颖性：已有工作是否没有充分覆盖？
@@ -153,81 +155,65 @@
 
 ------
 
-## 四、输出格式
+## 四、Topic 目录产出规范
 
-每次调研一个课题时，按以下格式输出：
+每个课题在 `topics/<topic>/` 下维护以下文件。**不得跳过 workflow 顺序**（见 §七）。
 
-### 课题名称
+| 步骤 | 文件 | 职责 | 模板 |
+|------|------|------|------|
+| 1 | `topic_brief.md` | 当前版本课题定义（收窄后只保留一版） | `templates/topic_brief_template.md` |
+| 2 | `paper_table.csv` | 论文索引 + 核验 | — |
+| 3 | `paper_cards/` | 核心论文精读（`core_read=yes` 必须有 card） | `templates/paper_card_template.md` |
+| 4 | `related_work.md` | 文献地图（按类总结，非流水账） | — |
+| 5 | `gap_analysis.md` | 空白分析、换名判断、MVP 方向、收窄记录 | `templates/gap_analysis_template.md` |
+| 6 | `adversarial_review.md` | 审稿人攻击：会不会被拒 | `templates/adversarial_review_template.md` |
+| 7 | `file_consistency_check.md` | 全库一致性审计 | `templates/file_consistency_check_template.md` |
+| 8 | `decision.md` | Go / Narrow / Hold / No-Go | `templates/decision_template.md` |
+| 9 | `experiment_plan.md` | MVP 实验设计（仅 decision 允许后） | `templates/experiment_plan_template.md` |
+| 10 | `outputs/` | pilot / 实验产出 | — |
 
-一句话定义这个课题，不要使用空泛大词。
+### topic_brief.md 必须包含
 
-### 核心问题
+- 一句话课题定义（不用空泛大词）
+- 核心失败模式
+- 为什么重要
+- 研究边界（保留 / 删除）
+- 研究问题（RQ1–3）
+- 预期贡献
+- 最危险 related work
+- 当前最大风险
 
-说明它到底研究什么失败模式、机制问题或表示问题。
+### related_work.md 必须包含
 
-### 为什么重要
+- 按 category 分组（非逐篇流水账）
+- 每组：已覆盖什么、没覆盖什么、与本案关系
+- 引用论文必须在 `paper_table.csv` 中有对应行
 
-说明它为什么影响真实 agent 系统，而不是只在概念上好听。
+### gap_analysis.md 必须包含
 
-### 已有工作
+- §二「是否已有相似工作」的分层判断
+- §三「贡献类型」下的 MVP 选择
+- 最危险 3 篇 related work 正面比较
+- 是否只是换名
+- 若收窄：完整收窄记录（原始题目 → 新题目 → 删除/保留/实验边界）
+- **不得**嵌入 adversarial 或 consistency 全文（分别写入独立文件）
 
-列出最相关的论文、benchmark、系统和方法，并说明它们做到了什么、没做到什么。
+### adversarial_review.md 与 gap_analysis.md 的分工
 
-### 创新性判断
+| 文件 | 回答的问题 |
+|------|------------|
+| `gap_analysis.md` | 空白在哪里？还能做什么？ |
+| `adversarial_review.md` | 这个空白站得住吗？审稿人会怎么拒？ |
 
-明确判断：
+### experiment_plan.md 填写条件
 
-- 是否已经有人做过；
-- 如果做过，空白在哪里；
-- 如果没做过，为什么可能是新问题；
-- 审稿人可能会质疑什么。
+- **Go**：可写完整 MVP + pilot + full 计划
+- **Narrow**：仅可写 **pilot / MVP**（明确 minimum evidence），不可写 full-scale claim
+- **Hold / No-Go**：不写 experiment_plan，或只留一行说明暂停原因
 
-### 可验证方案
+### 对话输出 vs 文件
 
-说明可以用什么公开数据集、benchmark、模拟环境、真实 trace 或自建数据验证。
-
-### 可能方法
-
-提出至少三种可行方法路线：
-
-1. 最小可行方法；
-2. 中等创新方法；
-3. 最有论文潜力的方法。
-
-### 实验设计
-
-包括：
-
-- 任务定义；
-- 数据构造；
-- baseline；
-- 指标；
-- 消融实验；
-- 泛化实验；
-- 错误分析；
-- 人工评估是否需要。
-
-### 风险判断
-
-指出这个课题最大的 3–5 个风险，包括：
-
-- 创新性不足；
-- benchmark 太小；
-- 现有工作太接近；
-- 方法只是工程集成；
-- 评估不可信；
-- 计算资源不足；
-- 结果可能不显著。
-
-### 最终结论
-
-必须给出明确判断：
-
-- 值不值得做；
-- 是否适合顶会；
-- 适合投什么会议；
-- 以我当前水平，应该从哪里切入；
-- 下一步 7 天应该做什么。
+对话中可以摘要结论，但**必须以 repo 文件为准**。每轮调研结束应明确列出更新了哪些文件。
 
 ------
 
@@ -256,11 +242,293 @@
 不要只是帮我找“有趣方向”。
 要帮我找到一个能够发展为论文的研究问题：
 
-- 有问题定义；
-- 有相关工作边界；
-- 有实验场景；
+- 有问题定义（`topic_brief.md`）；
+- 有相关工作边界（`related_work.md` + `paper_cards/`）；
+- 有实验场景（`experiment_plan.md`）；
 - 有 baseline；
 - 有指标；
 - 有方法空间；
-- 有审稿人认可的贡献点；
+- 有审稿人认可的贡献点（经 `adversarial_review.md` 检验）；
 - 有我当前能力可以启动的最小版本。
+
+------
+
+## 七、Research Repo 结构与 Workflow
+
+### 目录结构
+
+```text
+agent-research-scout/
+├── README.md
+├── skills/
+│   └── paper_research_skill.md          ← 本文件
+├── templates/                           ← 各产出文件模板
+├── topics/
+│   └── <topic>/
+│       ├── topic_brief.md
+│       ├── paper_table.csv
+│       ├── paper_cards/
+│       ├── related_work.md
+│       ├── gap_analysis.md
+│       ├── adversarial_review.md
+│       ├── file_consistency_check.md
+│       ├── decision.md
+│       └── experiment_plan.md
+├── papers/          ← 原始 PDF、笔记、bib
+├── benchmarks/
+├── scripts/
+└── outputs/         ← pilot / 实验结果（按 topic 分子目录）
+```
+
+### Workflow（严格顺序）
+
+```text
+1. topic_brief.md           定义课题
+2. paper_table.csv          收集并核验论文（≥15 篇广搜，标记 core_read）
+3. paper_cards/             核心论文精读（core_read=yes，通常 ≥8 篇）
+4. related_work.md          文献地图
+5. gap_analysis.md          空白分析 + 必要时收窄
+6. adversarial_review.md    审稿人攻击
+7. file_consistency_check.md  一致性审计
+8. decision.md              Go / Narrow / Hold / No-Go
+9. experiment_plan.md       仅 decision 允许后
+10. outputs/                执行 pilot / 实验
+```
+
+**关键约束**：
+
+- `experiment_plan.md` **不得**早于 `gap_analysis.md` 和 `adversarial_review.md`
+- `decision.md` **不得**早于 `file_consistency_check.md`
+- `gap_analysis` 收窄后，**必须同步** `topic_brief.md`
+- 重调研（方案 A）时：**保留**旧文件，增量审计更新，不整库删除
+
+### 新开课题
+
+1. 创建 `topics/<topic>/`
+2. 从 `templates/` 复制各模板并重命名
+3. 按 workflow 顺序填写
+
+------
+
+## 八、真实性核验要求
+
+所有论文、benchmark、数据集、代码库、会议接收信息都必须经过核验，写入 `paper_table.csv`。
+
+### paper_table.csv 必填列
+
+- title, year, venue, category, type
+- problem, benchmark, metrics, limitation
+- relevance_to_<topic>, relevance_score
+- url, authors, source_type, verified_status, verification_note
+- **core_read**（yes / no）
+
+### source_type 只能是
+
+- arXiv
+- OpenReview
+- ACL Anthology
+- PMLR
+- ACM / IEEE / Springer official page
+- official project page
+- author homepage
+- GitHub official repository
+- uncertain
+
+### verified_status 只能是
+
+- verified
+- uncertain
+- remove
+
+### 判定规则
+
+1. 如果找不到可靠来源，必须标记为 uncertain。
+2. 如果标题、作者、年份、venue 任一关键字段无法核验，不能标记 verified。
+3. 如果论文看起来合理但无法找到来源，必须标记 uncertain 或 remove。
+4. 不能为了保持方向成立而强行保留论文。
+5. arXiv 论文不能随意写成顶会接收论文。
+6. under review 不能写成 accepted。
+7. withdrawn 论文必须注明 withdrawn。
+8. 如果某篇论文是 gap_analysis 的核心论据，必须有可靠来源，否则不能作为核心论据。
+9. 如果一个事实只来自模型记忆而没有来源，必须降级为 uncertain。
+10. 如果检索结果之间互相矛盾，优先使用官方论文页、会议 proceedings、arXiv/OpenReview/PMLR/ACL Anthology，并在 verification_note 中写明冲突。
+
+### core_read 规则
+
+- `core_read=yes` 的论文：**必须**有 `paper_cards/<slug>.md`
+- 通常选 8 篇：最直接威胁 + 实验底座 + 方法/benchmark 边界
+- uncertain / remove 论文：**不得**设 core_read=yes
+
+------
+
+## 九、Adversarial Review 要求
+
+在判断任何课题是否值得继续前，必须先站在顶会审稿人角度攻击该课题。
+
+**产出文件**：`topics/<topic>/adversarial_review.md`（模板：`templates/adversarial_review_template.md`）。**不得**只嵌入 `gap_analysis.md`。
+
+必须回答：
+
+1. 这个问题是否已经被已有论文覆盖？
+2. 这个课题是否只是已有工作的换名？
+3. 这个方法是否只是 prompt / retry / checkpoint / workflow 工程组合？
+4. benchmark 是否太小、太人工、太依赖构造？
+5. 指标是否只是已有指标改名？
+6. baseline 是否足够强？
+7. 是否能跨模型、跨任务、跨环境验证？
+8. 如果投 ICLR / NeurIPS / ACL / EMNLP，最可能被拒的理由是什么？
+
+输出必须包含：
+
+- strongest rejection reason
+- most dangerous related work
+- novelty risk（高 / 中高 / 中 / 低）
+- evaluation risk
+- engineering-only risk
+- minimum evidence needed to continue
+
+若无法有效回应核心拒稿理由 → 建议 Hold、Narrow 或 No-Go（写入 `decision.md`）。
+
+------
+
+## 十、课题收窄与重命名规则
+
+如果调研发现原始课题过宽、已有工作覆盖过多、术语与已有论文重叠，必须主动提出收窄或重命名。
+
+**产出位置**：`gap_analysis.md` §0 收窄记录 + 同步更新 `topic_brief.md`（只保留当前版本）。
+
+必须检查：
+
+1. 原始课题名是否与已有论文术语冲突？
+2. 原始问题定义是否太宽？
+3. 是否需要限定场景？
+4. 是否需要限定状态类型？
+5. 是否需要限定 benchmark？
+6. 是否需要从 general agent 缩小到 software agent / web agent / memory agent？
+7. 是否需要从 method paper 改成 benchmark paper？
+8. 是否需要从系统贡献改成问题贡献？
+
+收窄记录格式：
+
+- 原始题目
+- 风险
+- 建议新题目
+- 新题目的一句话定义
+- 删除哪些过宽内容
+- 保留哪些核心内容
+- 下一步实验边界
+
+如果 gap_analysis 已经收窄课题，**必须**同步更新 topic_brief.md、related_work.md 中的 scope 描述，并在下一轮 `file_consistency_check.md` 中验证。
+
+------
+
+## 十一、Research Repo 文件一致性要求
+
+每次完成调研、审计、gap analysis 或实验计划后，必须运行一致性检查。
+
+**产出文件**：`topics/<topic>/file_consistency_check.md`（模板：`templates/file_consistency_check_template.md`）。**不得**只嵌入 `gap_analysis.md` 或 `decision.md`。
+
+检查范围：
+
+- topic_brief.md
+- paper_table.csv
+- related_work.md
+- paper_cards/
+- gap_analysis.md
+- adversarial_review.md
+- experiment_plan.md
+- decision.md
+- file_consistency_check.md（本文件自身）
+
+### 一致性规则
+
+1. 如果 paper_table 中某论文被标记 uncertain，则 gap_analysis 不能把它作为核心论据。
+2. 如果 gap_analysis 收窄课题，topic_brief 必须同步更新。
+3. 如果 gap_analysis 认为当前还不能实验，experiment_plan.md 不应强行填写 full 计划。
+4. 如果 experiment_plan.md 已经写出 MVP，decision.md 必须说明当前是否进入 pilot experiment。
+5. 如果 related_work 中引用了论文，paper_table 必须有对应条目。
+6. 如果某论文 core_read=yes，则必须有对应 paper_card。
+7. 如果某论文被标记 remove，related_work 和 gap_analysis 必须删除或降级其论据地位。
+8. 如果 venue、year、title 被修正，所有相关文件必须同步修正。
+9. 如果 topic_brief、gap_analysis、experiment_plan 对课题名称或范围的描述不一致，必须优先以最新 gap_analysis 为准并同步更新其他文件。
+10. 如果 decision.md 给出 Go，但 experiment_plan.md 没有明确 data、baseline、指标和 MVP，则 decision 必须降级为 Narrow 或 Hold。
+
+### file_consistency_check.md 必须包含
+
+1. 文件状态总表（consistent / outdated / risky）
+2. 上述 10 条规则逐项 Pass/Fail
+3. 跨文件关键字段对齐表（课题名称、核心 claim、MVP benchmark、Decision）
+4. 发现的问题与待办
+5. 审计结论
+
+------
+
+## 十二、Go / No-Go 决策规则
+
+任何课题进入实验前，必须通过以下检查。
+
+**产出文件**：`topics/<topic>/decision.md`（模板：`templates/decision_template.md`）。
+
+### Go 条件
+
+满足以下**全部**条件，才可以标 **Go** 并进入 pilot / full experiment：
+
+1. 至少 8 篇核心论文已核验（verified）。
+2. 至少 5 篇核心论文已有 paper card（通常 8/8）。
+3. gap_analysis 明确指出已有工作覆盖了什么、没有覆盖什么。
+4. adversarial_review 已完成，且 novelty / evaluation 风险有预备回应。
+5. file_consistency_check 通过（无 outdated / risky）。
+6. 最危险的 3 篇 related work 已经被正面比较。
+7. 课题已经收窄到一个可实验场景。
+8. 有明确 benchmark 或可构造数据。
+9. 有 baseline。
+10. 有至少 3 个可量化指标。
+11. 有最小实验方案（experiment_plan MVP 段）。
+12. uncertain 论文没有被当作核心论据。
+13. **pilot 或 minimum evidence 已满足** adversarial_review 中的阈值（若尚未跑 pilot → 最高只能 **Narrow**，不能 Go）。
+
+### No-Go 条件
+
+出现以下情况，应暂停或换方向：
+
+1. 核心问题已被已有论文完整覆盖。
+2. 只能通过换术语制造新颖性。
+3. 没有可复现实验。
+4. 没有强 baseline。
+5. 方法只是工程拼装。
+6. benchmark 完全人工且缺乏真实任务支撑。
+7. 指标无法说服审稿人。
+8. 主要论据依赖 uncertain 论文。
+
+### 决策输出格式（decision.md）
+
+- **Decision**: Go / Narrow / Hold / No-Go
+- **Reason**（含 Go / No-Go 条件检查表）
+- **Minimum next step**
+- **What evidence would change this decision**
+- **评分表**（§三 10 分制，可选）
+
+说明：
+
+- **Go**：可以进入 pilot / 最小实验。
+- **Narrow**：方向可做，已收窄或待 pilot；可写 MVP plan，不可标 full Go。
+- **Hold**：暂缓，先补文献核验、gap 或 pilot 数据。
+- **No-Go**：不建议继续投入。
+
+------
+
+## 十三、最终使用原则
+
+这个 skill 不只用于生成调研结果，还用于**审计**调研结果。
+
+使用时必须遵守：
+
+1. 先核验，再判断（`paper_table.csv`）。
+2. 先攻击，再支持（`adversarial_review.md`）。
+3. 先收窄，再实验（`gap_analysis.md` → `topic_brief.md`）。
+4. 先形成 benchmark / baseline / metric，再讨论方法创新。
+5. 不把 uncertain 论文当核心证据。
+6. 不为了保留课题而降低判断标准。
+7. 不把工程集成包装成研究贡献。
+8. 每轮调研结束必须更新 `file_consistency_check.md` 和 `decision.md`。
+9. 所有结论以 repo 文件为准；对话摘要不得与文件矛盾。
