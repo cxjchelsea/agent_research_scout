@@ -73,7 +73,7 @@
 | 1 | adversarial / consistency 曾嵌入 gap/decision | **已修复** | 已拆为独立文件 |
 | 2 | README 未反映新 workflow | **已修复** | README 已更新 9 步 workflow |
 | 3 | skill §十 未列新文件名 | **已修复** | paper_research_skill.md 已同步 |
-| 4 | pilot 未执行 | **开放** | 执行 experiment_plan Phase 1 后重跑本检查 |
+| 4 | pilot 未执行 | **进行中** | 脚手架已就绪：`scripts/pilot/` + `outputs/pilot/checklist.md` |
 
 ---
 

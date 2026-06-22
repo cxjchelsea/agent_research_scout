@@ -62,9 +62,17 @@
 
 ## Minimum next step
 
-**执行 `experiment_plan.md` Phase 1：10 题 pilot（3 条件 × k=3）**
+**执行 pilot** — 按 `outputs/pilot/checklist.md`：
 
-产出至 `outputs/pilot/` → 重跑 `file_consistency_check.md` → 更新本文件。
+```powershell
+cd scripts/pilot
+pip install -r requirements.txt
+python sample_instances.py
+python run_pilot.py --dry-run    # 检查命令
+python run_pilot.py --execute    # 真实运行（Docker + API）
+python analyze_pilot.py
+python update_decision_draft.py  # 合并进本文件
+```
 
 ---
 

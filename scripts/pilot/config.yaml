@@ -1,0 +1,53 @@
+# Dual-State Contamination pilot configuration
+# See: topics/state_contamination/experiment_plan.md
+
+topic: state_contamination
+benchmark: swe-bench_verified
+split: test
+
+pilot:
+  n_instances: 10
+  seed: 42
+  max_attempts: 3  # k
+
+conditions:
+  - id: dirty-retry
+    context_policy: retain
+    world_policy: retain
+    description: Default agent — keep failed attempt in history and workspace edits
+
+  - id: clean-restart
+    context_policy: reset
+    world_policy: retain
+    description: CCRM-style — clear message history on retry, keep workspace
+
+  - id: full-reset
+    context_policy: reset
+    world_policy: reset
+    description: Clear history and restore workspace to initial snapshot on retry
+
+# mini-SWE-agent invocation (install separately: pip install mini-swe-agent)
+mini_swe_agent:
+  command: mini-extra
+  subcommand: swebench-single
+  subset: verified
+  split: test
+  environment_class: docker
+  config: null  # default swebench.yaml
+  extra_args:
+    - --exit-immediately
+
+model:
+  # Override via env MINI_SWE_MODEL or --model CLI flag
+  default: openai/gpt-4o-mini
+
+paths:
+  instances: outputs/pilot/instances.json
+  trajectories: outputs/pilot/trajectories
+  metrics: outputs/pilot/metrics
+  run_log: outputs/pilot/run_log.jsonl
+
+thresholds:
+  recovery_gap_go_pp: 5.0
+  recovery_gap_nogo_pp: 3.0
+  world_reset_wins_min: 2  # C > B on at least this many / 10 instances

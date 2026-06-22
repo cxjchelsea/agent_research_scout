@@ -1,0 +1,18 @@
+{
+  "benchmark": "swe-bench_verified",
+  "split": "test",
+  "seed": 42,
+  "n_instances": 10,
+  "instance_ids": [
+    "django__django-11099",
+    "sympy__sympy-15599",
+    "matplotlib__matplotlib-18869",
+    "scikit-learn__scikit-learn-10297",
+    "astropy__astropy-12907",
+    "pytest-dev__pytest-8906",
+    "sphinx-doc__sphinx-8721",
+    "pylint-dev__pylint-5859",
+    "requests__requests-2315",
+    "flask__flask-5063"
+  ]
+}

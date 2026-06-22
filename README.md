@@ -35,7 +35,23 @@ agent-research-scout/
 ├── benchmarks/
 ├── scripts/
 └── outputs/
+    └── pilot/                 ← pilot trajectories & metrics
 ```
+
+## Pilot (state_contamination)
+
+Literature workflow complete → **Decision: Narrow** → run 10-question pilot:
+
+```powershell
+cd scripts/pilot
+pip install -r requirements.txt
+python sample_instances.py
+python run_pilot.py --mock          # pipeline test (no Docker)
+python analyze_pilot.py
+python update_decision_draft.py
+```
+
+Real run: see `outputs/pilot/checklist.md` and `outputs/pilot/README.md`.
 
 ## Topic 文件职责
 

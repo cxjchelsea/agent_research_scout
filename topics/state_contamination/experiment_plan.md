@@ -58,18 +58,20 @@
 ## 5. 实验流程（Pilot 7 天）
 
 ### Day 1–2：环境搭建
-- [ ] 安装 mini-SWE-agent + SWE-bench Verified Docker
-- [ ] 实现 3 条件 wrapper（dirty / clean-context / full-reset）
-- [ ] 日志：每 step 的 context token 数、workspace hash、resolve 结果
+- [ ] 安装 mini-SWE-agent + SWE-bench Verified Docker（见 `outputs/pilot/checklist.md`）
+- [ ] `cd scripts/pilot && pip install -r requirements.txt`
+- [ ] `python sample_instances.py` → `outputs/pilot/instances.json`
+- [ ] 三条件 wrapper：`scripts/pilot/run_pilot.py`（dirty / clean-context / full-reset）
+- [ ] 日志格式：`outputs/pilot/run_log.jsonl`（见 `scripts/pilot/trajectory_schema.py`）
 
 ### Day 3–5：10 题 pilot
+- [ ] `python run_pilot.py --execute`（或先 `--dry-run` / `--mock` 测管道）
 - [ ] 每题 3 条件 × k=3
-- [ ] 导出 trajectories 到 `outputs/pilot/`（JSONL）
+- [ ] 导出 trajectories 到 `outputs/pilot/trajectories/`
 
 ### Day 6：分析
-- [ ] 计算 CR、RG、WSD
-- [ ] 若 RG < 3pp 且 WSD 不显著 → 触发 **No-Go 复审**（见 decision.md）
-- [ ] 若 RG ≥ 5pp → 扩展至 50 题
+- [ ] `python analyze_pilot.py` → `outputs/pilot/metrics/pilot_summary.json`
+- [ ] `python update_decision_draft.py` → 合并进 `decision.md`
 
 ### Day 7：文档
 - [ ] 更新 gap_analysis / decision.md
