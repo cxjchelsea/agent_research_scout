@@ -39,6 +39,35 @@ class PilotMetrics:
     thresholds: dict
     by_condition: dict[str, ConditionMetrics]
     per_instance: list[dict]
+    warnings: list[str]
+
+
+def validate_rows(rows: list[dict], cfg: dict, *, allow_mock: bool, allow_unvalidated: bool) -> list[str]:
+    errors: list[str] = []
+    warnings: list[str] = []
+    modes = {row.get("run_mode", "unknown") for row in rows}
+
+    if "mock" in modes and not allow_mock:
+        errors.append("run_log contains mock rows; rerun with --allow-mock only for pipeline tests")
+
+    has_real_rows = bool(modes - {"mock"})
+    hook_validated = bool((cfg.get("state_control") or {}).get("hook_validated"))
+    if has_real_rows and not hook_validated and not allow_unvalidated:
+        errors.append("state_control.hook_validated=false; run validate_pilot_setup.py before real analysis")
+
+    unresolved = [row for row in rows if row.get("resolved") is None]
+    if unresolved:
+        errors.append(f"{len(unresolved)} rows have resolved=null; parse SWE-bench evaluation before analysis")
+
+    if any(row.get("first_step_error") is None for row in rows):
+        warnings.append("some rows lack first_step_error; CR may be null or incomplete")
+    if any(not row.get("workspace_hash") or not row.get("initial_workspace_hash") for row in rows):
+        warnings.append("some rows lack workspace hashes; WSD may be null or incomplete")
+
+    if errors:
+        detail = "\n".join(f"- {error}" for error in errors)
+        raise ValueError(f"Pilot log is not analysis-ready:\n{detail}")
+    return warnings
 
 
 def resolve_at_k(attempts: list[dict]) -> bool:
@@ -64,7 +93,7 @@ def first_step_error_rate(attempts: list[dict], attempt_nums: set[int]) -> float
     return sum(1 for a in subset if a["first_step_error"]) / len(subset)
 
 
-def analyze_rows(rows: list[dict], thresholds: dict) -> PilotMetrics:
+def analyze_rows(rows: list[dict], thresholds: dict, warnings: list[str] | None = None) -> PilotMetrics:
     by_inst_cond: dict[tuple[str, str], list[dict]] = defaultdict(list)
     for row in rows:
         by_inst_cond[(row["instance_id"], row["condition"])].append(row)
@@ -154,6 +183,7 @@ def analyze_rows(rows: list[dict], thresholds: dict) -> PilotMetrics:
         thresholds=thresholds,
         by_condition={k: v for k, v in by_condition.items()},
         per_instance=per_instance,
+        warnings=warnings or [],
     )
 
 
@@ -165,6 +195,7 @@ def metrics_to_dict(m: PilotMetrics) -> dict:
         "world_reset_win_rate": round(m.world_reset_win_rate, 3),
         "recommendation": m.recommendation,
         "thresholds": m.thresholds,
+        "warnings": m.warnings,
         "by_condition": {k: asdict(v) for k, v in m.by_condition.items()},
         "per_instance": m.per_instance,
     }
@@ -175,6 +206,8 @@ def main() -> int:
     parser.add_argument("--config", type=Path, default=SCRIPT_DIR / "config.yaml")
     parser.add_argument("--run-log", type=Path, help="Override run_log.jsonl path")
     parser.add_argument("--output", type=Path, help="Write metrics JSON path")
+    parser.add_argument("--allow-mock", action="store_true", help="Allow mock rows for pipeline testing")
+    parser.add_argument("--allow-unvalidated", action="store_true", help="Analyze real rows before hook validation")
     args = parser.parse_args()
 
     with args.config.open(encoding="utf-8") as f:
@@ -188,7 +221,13 @@ def main() -> int:
         print(f"No records in {run_log}. Run: python run_pilot.py --mock")
         return 1
 
-    result = analyze_rows(rows, cfg["thresholds"])
+    try:
+        warnings = validate_rows(rows, cfg, allow_mock=args.allow_mock, allow_unvalidated=args.allow_unvalidated)
+    except ValueError as exc:
+        print(str(exc))
+        return 1
+
+    result = analyze_rows(rows, cfg["thresholds"], warnings)
     payload = metrics_to_dict(result)
     metrics_out.parent.mkdir(parents=True, exist_ok=True)
     metrics_out.write_text(json.dumps(payload, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
@@ -197,6 +236,8 @@ def main() -> int:
     print(f"Recovery Gap (clean-restart - dirty-retry): {result.recovery_gap_pp:.2f} pp")
     print(f"World-reset wins (C resolved, B not): {result.world_reset_wins}/{result.n_instances}")
     print(f"Recommendation: {result.recommendation}")
+    for warning in result.warnings:
+        print(f"Warning: {warning}")
     print(f"Wrote {metrics_out}")
     return 0
 

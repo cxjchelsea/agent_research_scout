@@ -21,7 +21,6 @@ __pycache__/
 .venv/
 venv/
 *.egg-info/
-.pypytest_cache/
 .pytest_cache/
 
 # Research artifacts (keep directory structure via .gitkeep)
@@ -34,8 +33,10 @@ outputs/pilot/run_log.jsonl
 outputs/pilot/metrics/pilot_summary.json
 outputs/pilot/decision_draft.md
 outputs/pilot/trajectories/**
+outputs/pilot/predictions/**
 !outputs/pilot/trajectories/.gitkeep
 !outputs/pilot/metrics/.gitkeep
+!outputs/pilot/predictions/.gitkeep
 
 # Large / binary files
 *.pdf

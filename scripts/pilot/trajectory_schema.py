@@ -18,7 +18,8 @@ class AttemptRecord:
     instance_id: str
     condition: str
     attempt: int
-    resolved: bool
+    resolved: bool | None
+    run_mode: str = "unknown"
     first_step_error: bool | None = None
     workspace_hash: str | None = None
     initial_workspace_hash: str | None = None

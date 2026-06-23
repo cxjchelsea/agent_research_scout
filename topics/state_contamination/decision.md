@@ -69,7 +69,10 @@ cd scripts/pilot
 pip install -r requirements.txt
 python sample_instances.py
 python run_pilot.py --dry-run    # 检查命令
-python run_pilot.py --execute    # 真实运行（Docker + API）
+python validate_pilot_setup.py   # 真实执行前检查
+python run_pilot.py --smoke-test # 基础设施 smoke test
+python run_pilot.py --execute --reset-log  # 真实运行（Docker + API）
+python validate_pilot_setup.py   # 分析前检查
 python analyze_pilot.py
 python update_decision_draft.py  # 合并进本文件
 ```

@@ -46,12 +46,13 @@ Literature workflow complete → **Decision: Narrow** → run 10-question pilot:
 cd scripts/pilot
 pip install -r requirements.txt
 python sample_instances.py
-python run_pilot.py --mock          # pipeline test (no Docker)
-python analyze_pilot.py
+python run_pilot.py --mock --reset-log  # pipeline test (no Docker)
+python analyze_pilot.py --allow-mock
 python update_decision_draft.py
 ```
 
-Real run: see `outputs/pilot/checklist.md` and `outputs/pilot/README.md`.
+Real run: `python validate_pilot_setup.py` → `python run_pilot.py --smoke-test` → `python run_pilot.py --execute --reset-log`.
+See `outputs/pilot/checklist.md` and `outputs/pilot/README.md`.
 
 ## Topic 文件职责
 

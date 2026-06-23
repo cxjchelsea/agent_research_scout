@@ -62,14 +62,19 @@
 - [ ] `cd scripts/pilot && pip install -r requirements.txt`
 - [ ] `python sample_instances.py` → `outputs/pilot/instances.json`
 - [ ] 三条件 wrapper：`scripts/pilot/run_pilot.py`（dirty / clean-context / full-reset）
+- [ ] `python validate_pilot_setup.py` 验证配置与日志不是 mock/未解析状态
 - [ ] 日志格式：`outputs/pilot/run_log.jsonl`（见 `scripts/pilot/trajectory_schema.py`）
 
 ### Day 3–5：10 题 pilot
-- [ ] `python run_pilot.py --execute`（或先 `--dry-run` / `--mock` 测管道）
+- [ ] `python run_pilot.py --mock --reset-log` 测试管道（不可作为研究证据）
+- [ ] `python run_pilot.py --dry-run` 检查真实命令（不应含 `--exit-immediately`）
+- [ ] `python run_pilot.py --smoke-test` 做单题基础设施检查
+- [ ] `python run_pilot.py --execute --reset-log` 真实执行（清空 mock 日志）
 - [ ] 每题 3 条件 × k=3
 - [ ] 导出 trajectories 到 `outputs/pilot/trajectories/`
 
 ### Day 6：分析
+- [ ] `python validate_pilot_setup.py` 确认真实日志可分析
 - [ ] `python analyze_pilot.py` → `outputs/pilot/metrics/pilot_summary.json`
 - [ ] `python update_decision_draft.py` → 合并进 `decision.md`
 
