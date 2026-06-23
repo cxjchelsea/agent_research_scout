@@ -117,10 +117,14 @@ def check_run_log(cfg: dict, *, allow_mock: bool) -> tuple[list[str], list[str]]
         warnings.append(f"{len(missing_first_step)} rows lack first_step_error; CR incomplete")
 
     missing_hash = [
-        row for row in rows if not row.get("workspace_hash") or not row.get("initial_workspace_hash")
+        row
+        for row in rows
+        if not row.get("workspace_hash")
+        or not row.get("initial_workspace_hash")
+        or not row.get("pre_attempt_workspace_hash")
     ]
     if missing_hash:
-        warnings.append(f"{len(missing_hash)} rows lack workspace hashes; WSD incomplete")
+        warnings.append(f"{len(missing_hash)} rows lack initial/pre/post workspace hashes; WSD/state-control checks incomplete")
 
     return errors, warnings
 
@@ -140,15 +144,19 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Validate dual-state pilot setup")
     parser.add_argument("--config", type=Path, default=SCRIPT_DIR / "config.yaml")
     parser.add_argument("--allow-mock", action="store_true", help="Allow mock run_log rows for pipeline testing")
+    parser.add_argument("--static-only", action="store_true", help="Skip run_log checks before SWE-bench evaluation")
     args = parser.parse_args()
 
     with args.config.open(encoding="utf-8") as f:
         cfg = yaml.safe_load(f)
 
     errors, warnings = check_static(cfg)
-    log_errors, log_warnings = check_run_log(cfg, allow_mock=args.allow_mock)
-    errors.extend(log_errors)
-    warnings.extend(log_warnings)
+    if args.static_only:
+        warnings.append("static-only mode: skipped run_log evidence checks")
+    else:
+        log_errors, log_warnings = check_run_log(cfg, allow_mock=args.allow_mock)
+        errors.extend(log_errors)
+        warnings.extend(log_warnings)
 
     dry_ok, dry_tail = run_dry_command()
     if not dry_ok:
@@ -157,7 +165,9 @@ def main() -> int:
 
     hook_validated = bool((cfg.get("state_control") or {}).get("hook_validated"))
     if not hook_validated:
-        warnings.append("state_control.hook_validated=false; real pilot results must not update decision yet")
+        warnings.append(
+            "state_control.hook_validated=false; run state_control_validation.py and do not update decision from real results yet"
+        )
 
     print(status_line(not errors, "pilot setup validation"))
     for warning in warnings:

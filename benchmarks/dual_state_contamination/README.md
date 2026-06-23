@@ -22,11 +22,15 @@ Full research context: `topics/state_contamination/topic_brief.md`
 |----|---------|
 | CR | P(first-step error \| retry) − P(first-step error \| attempt 1) |
 | RG | resolve(clean-restart@k) − resolve(dirty-retry@k) |
-| WSD | Workspace hash drift from initial snapshot after failed attempt |
+| WSD-basic | Workspace hash drift from initial snapshot after failed attempt |
+| WSD-source / residual | Source/test diff files and failed-attempt residual patch |
+| WSD-harmful | Residual workspace state that plausibly causes retry failure or deviation |
 
-## Pilot spec
+## Evidence tiers
 
-- **N** = 10 instances (seed 42), **k** = 3
+- Infrastructure pilot: **N** = 10 instances (seed 42), **k** = 3. Validates state control, strict merge, logging, and metric computability only.
+- Signal pilot: **N** = 20–30. Checks whether full-reset has stable advantage over clean-restart.
+- Paper-scale subset: **N** = 50–100. Reports confidence intervals, paired analysis, and harmful WSD case studies.
 - Scaffold: mini-SWE-agent, bash-only
 - Implementation: `scripts/pilot/`
 

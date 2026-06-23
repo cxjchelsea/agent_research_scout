@@ -107,6 +107,9 @@ class MiniSwePythonBackend:
                 "environment": {"environment_class": env_class},
             }
         )
+        step_limit = self.cfg.get("pilot", {}).get("step_limit_override")
+        if step_limit is not None:
+            configs.append({"agent": {"step_limit": int(step_limit)}})
         return self.mswe["recursive_merge"](*configs)
 
     def load_instance(self, instance_id: str) -> dict:
@@ -171,6 +174,7 @@ class MiniSwePythonBackend:
         env,
         agent,
         initial_workspace_hash: str | None,
+        pre_attempt_workspace_hash: str | None,
     ) -> AttemptResult:
         instance_id = instance["instance_id"]
         trajectory_path = (
@@ -209,6 +213,7 @@ class MiniSwePythonBackend:
                     "pilot_condition": condition_id,
                     "pilot_attempt": attempt,
                     "initial_workspace_hash": initial_workspace_hash,
+                    "pre_attempt_workspace_hash": pre_attempt_workspace_hash,
                     "workspace_hash": current_hash,
                     **(info if isinstance(info, dict) else {}),
                 },
@@ -223,6 +228,7 @@ class MiniSwePythonBackend:
             resolved=None,
             run_mode="python-api",
             first_step_error=None,
+            pre_attempt_workspace_hash=pre_attempt_workspace_hash,
             workspace_hash=current_hash,
             initial_workspace_hash=initial_workspace_hash,
             trajectory_path=str(trajectory_path),
@@ -258,6 +264,7 @@ class MiniSwePythonBackend:
                     agent = self.make_agent(env)
 
                 assert env is not None and agent is not None
+                pre_attempt_hash = self.workspace_hash(env)
                 result = self.run_attempt(
                     instance=instance,
                     condition_id=condition_id,
@@ -265,6 +272,7 @@ class MiniSwePythonBackend:
                     env=env,
                     agent=agent,
                     initial_workspace_hash=attempt_initial_hash,
+                    pre_attempt_workspace_hash=pre_attempt_hash,
                 )
                 print(
                     f"[python-api] {instance_id} {condition_id} a{attempt} "

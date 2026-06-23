@@ -28,6 +28,21 @@ OLLAMA_API_BASE=http://your-ollama-host:11434
 | `update_decision_draft.py` | Draft decision update from metrics |
 | `trajectory_schema.py` | JSONL record format |
 | `validate_pilot_setup.py` | Check config/log readiness before real decision updates |
+| `state_control_validation.py` | Validate observable context/world state-control evidence |
 | `backend/mini_swe_adapter.py` | Python API backend with env/agent lifecycle state control |
+
+The 10-instance run is an **infrastructure pilot**. It can validate plumbing,
+state control, merge safety, and whether metrics are computable; it should not
+be treated as paper-level Go evidence. Scale to 20–30 instances for signal and
+50–100 for paper-level estimates.
+
+When merging SWE-bench results, every resolved label must identify the exact
+`instance_id + condition + attempt`. If the evaluation JSON only maps
+`instance_id -> resolved`, pass the metadata explicitly, for example:
+
+```powershell
+python merge_evaluation_results.py --results path/to/eval.json `
+  --condition dirty-retry --attempt 1
+```
 
 Full checklist: `outputs/pilot/checklist.md`

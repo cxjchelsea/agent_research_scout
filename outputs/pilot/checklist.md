@@ -57,7 +57,9 @@ Conditions (see `scripts/pilot/conditions.py`):
 - [ ] Implement/fork mini-SWE-agent hook if `--execute` does not yet reset context/world  
       (env vars: `PILOT_CONTEXT_POLICY`, `PILOT_WORLD_POLICY`, `PILOT_ATTEMPT`)
 - [ ] After hook validation, set `state_control.hook_validated=true` in `scripts/pilot/config.yaml`
-- [ ] Run `python validate_pilot_setup.py`
+- [ ] Run `python validate_pilot_setup.py --static-only` before resolved labels exist
+- [ ] Run `python state_control_validation.py` after real rows exist
+      (`--world-only` is allowed only if context reset evidence is manually documented)
 - [ ] Log each attempt to `outputs/pilot/run_log.jsonl`
 
 **Pipeline test (no Docker):**
@@ -71,18 +73,23 @@ python analyze_pilot.py --allow-mock
 
 ---
 
-## Phase 4 — 10-question pilot (Day 3–5)
+## Phase 4 — 10-question infrastructure pilot (Day 3–5)
 
 ```powershell
-python validate_pilot_setup.py
+python validate_pilot_setup.py --static-only
 python run_pilot.py --smoke-test
+python run_pilot.py --execute --reset-log --step-limit 5 `
+  --only-instance django__django-11099 --only-condition dirty-retry
 python run_pilot.py --execute --reset-log
 ```
 
 - [ ] 10 instances × 3 conditions × k≤3 attempts
 - [ ] Trajectories under `outputs/pilot/trajectories/<instance>/<condition>/`
-- [ ] Each attempt logged with: `resolved=null`, `first_step_error`, `workspace_hash`
+- [ ] Each attempt logged with: `resolved=null`, `first_step_error`, `initial_workspace_hash`, `pre_attempt_workspace_hash`, `workspace_hash`
 - [ ] Predictions written under `outputs/pilot/predictions/`
+- [ ] Treat this as infrastructure evidence only: state control, merge safety, artifact writing, and metric computability
+
+For local Ollama models, treat the `--step-limit 5` command as a **pre-pilot viability check** only. It verifies model/tool-call execution and artifact writing, but may produce an empty patch if the model needs more steps.
 
 ---
 
@@ -92,9 +99,14 @@ python run_pilot.py --execute --reset-log
 - [ ] Save evaluation JSON files under `outputs/pilot/metrics/evaluations/`
 - [ ] Merge resolved labels:
 
+- [ ] Merge each evaluation file with exact condition/attempt metadata:
+
 ```powershell
-python merge_evaluation_results.py --results path/to/evaluation_results.json
+python merge_evaluation_results.py --results path/to/evaluation_results.json `
+  --condition dirty-retry --attempt 1
 ```
+
+- [ ] If evaluation rows already contain `condition`/`attempt` or `pilot_condition`/`pilot_attempt`, verify the strict merge accepts them without overrides
 
 ---
 
@@ -102,6 +114,7 @@ python merge_evaluation_results.py --results path/to/evaluation_results.json
 
 ```powershell
 python validate_pilot_setup.py
+python state_control_validation.py
 python analyze_pilot.py
 python update_decision_draft.py
 ```
@@ -109,13 +122,15 @@ python update_decision_draft.py
 - [ ] `outputs/pilot/metrics/pilot_summary.json` generated
 - [ ] Recovery Gap (RG) computed
 - [ ] World-reset wins counted (C > B)
+- [ ] Evidence level recorded (`infrastructure`, `signal`, or `paper`)
 - [ ] Recommendation: Go / Hold / No-Go
 
-| RG | World wins | Action |
-|----|------------|--------|
-| ≥ 5 pp | ≥ 2/10 | Merge draft → **Go** |
-| 3–5 pp | — | **Hold**, expand sample |
-| < 3 pp | — | **No-Go** review |
+| Tier | RG / world signal | Action |
+|------|-------------------|--------|
+| 10-instance infrastructure | Non-zero signal + state validation passes | **Hold**, scale to 20–30 |
+| 10-instance infrastructure | State validation or merge fails | Fix pipeline before more runs |
+| 20–30 signal pilot | Stable full-reset advantage | Consider Go / scale to 50–100 |
+| Any tier | No signal or invalid metrics | Hold / No-Go review |
 
 - [ ] Update `topics/state_contamination/decision.md`
 - [ ] Re-run `topics/state_contamination/file_consistency_check.md`

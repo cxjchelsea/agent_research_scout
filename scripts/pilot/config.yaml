@@ -38,6 +38,10 @@ mini_swe_agent:
   extra_args: []
   smoke_extra_args:
     - --exit-immediately
+    - -c
+    - swebench.yaml
+    - -c
+    - agent.step_limit=1
 
 state_control:
   hook_required: true
@@ -59,6 +63,11 @@ paths:
   run_log: outputs/pilot/run_log.jsonl
 
 thresholds:
+  # 10 instances are an infrastructure pilot: validate state control, merge,
+  # logging, and metric computability. Do not treat this tier as paper-level Go.
+  infrastructure_max_n: 10
+  signal_min_n: 20
+  paper_min_n: 50
   recovery_gap_go_pp: 5.0
   recovery_gap_nogo_pp: 3.0
   world_reset_wins_min: 2  # C > B on at least this many / 10 instances

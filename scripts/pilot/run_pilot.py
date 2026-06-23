@@ -109,6 +109,9 @@ def build_mini_command(
     if msa.get("config"):
         cmd.extend(["-c", msa["config"]])
     cmd.extend(msa.get("extra_args") or [])
+    step_limit = cfg.get("pilot", {}).get("step_limit_override")
+    if step_limit is not None:
+        cmd.extend(["-c", f"agent.step_limit={int(step_limit)}"])
     if smoke_test:
         cmd.extend(msa.get("smoke_extra_args") or [])
     return cmd
@@ -163,6 +166,10 @@ def mock_attempt(
     resolve_p = min(0.95, base_resolve_p + 0.05 * (attempt - 1))
     resolved = rng.random() < resolve_p
     initial_hash = pseudo_workspace_hash(instance_id, "initial", 0, False)
+    if cond.world_policy.value == "retain" and attempt > 1:
+        pre_attempt_hash = pseudo_workspace_hash(instance_id, condition_id, attempt - 1, False)
+    else:
+        pre_attempt_hash = initial_hash
     workspace_hash = pseudo_workspace_hash(instance_id, condition_id, attempt, resolved)
     first_step_error = rng.random() < (0.4 if attempt > 1 and cond.context_policy.value == "retain" else 0.2)
     return AttemptRecord(
@@ -172,6 +179,7 @@ def mock_attempt(
         resolved=resolved,
         run_mode="mock",
         first_step_error=first_step_error,
+        pre_attempt_workspace_hash=pre_attempt_hash,
         workspace_hash=workspace_hash,
         initial_workspace_hash=initial_hash,
         context_token_count=int(rng.uniform(800, 12000) * (attempt if cond.context_policy.value == "retain" else 1)),
@@ -207,9 +215,12 @@ def main() -> int:
     parser.add_argument("--only-instance", help="Run a single instance id")
     parser.add_argument("--reset-log", action="store_true", help="Delete existing run_log.jsonl before writing")
     parser.add_argument("--backend", choices=["cli", "python-api"], help="Execution backend for --execute")
+    parser.add_argument("--step-limit", type=int, help="Override mini-SWE-agent step_limit for quick pre-pilot runs")
     args = parser.parse_args()
 
     cfg = load_config(args.config)
+    if args.step_limit is not None:
+        cfg.setdefault("pilot", {})["step_limit_override"] = args.step_limit
     repo_root = REPO_ROOT
     paths = cfg["paths"]
     instances_path = args.instances or resolve_path(repo_root, paths["instances"])

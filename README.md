@@ -137,9 +137,10 @@ agent-research-scout/
 | `conditions.py` | 定义三种 retry 条件的 context/world 策略（retain / reset） | 被其他脚本 import，无独立输出 |
 | `run_pilot.py` | 编排实验运行。模式：`--dry-run`（只打印命令）、`--smoke-test`（测 Docker）、`--mock`（合成数据测管道）、`--execute`（真实跑） | `run_log.jsonl`、`trajectories/`、`predictions/` |
 | `analyze_pilot.py` | 从 `run_log.jsonl` 计算 CR、RG、WSD 及 Go/Hold/No-Go 建议 | `outputs/pilot/metrics/pilot_summary.json` |
-| `merge_evaluation_results.py` | 将 SWE-bench harness 的 resolved 标签合并回 `run_log.jsonl` | 更新 `run_log.jsonl` |
+| `merge_evaluation_results.py` | 将 SWE-bench harness 的 resolved 标签合并回 `run_log.jsonl`；必须精确到 `instance_id + condition + attempt` | 更新 `run_log.jsonl` |
 | `update_decision_draft.py` | 根据 pilot 指标生成 decision 更新草稿 | `outputs/pilot/decision_draft.md`（gitignore） |
 | `validate_pilot_setup.py` | 跑真实分析前检查：config 是否就绪、三条件 hook 是否验证、是否误用 mock 数据 | 终端报告 + exit code |
+| `state_control_validation.py` | 检查 run log 中的 context/world state-control 证据；默认缺少 context 证据会失败 | 终端报告 + exit code |
 | `trajectory_schema.py` | `run_log.jsonl` 每行的 JSON schema（`AttemptRecord` dataclass） | 被其他脚本 import |
 
 #### `scripts/pilot/backend/` — 执行后端
@@ -164,7 +165,7 @@ Pilot 脚本快速参考：安装、命令顺序、各脚本职责表。
 | `README.md` | 手写 | Pilot 目录说明、快速开始、成功阈值 | 提交 |
 | `checklist.md` | 手写 | 分阶段执行清单（Prerequisites → Sample → Smoke → Execute → Analyze → Decision） | 提交 |
 | `instances.json` | `sample_instances.py` | 10 个 SWE-bench Verified instance ID + seed | 提交 |
-| `run_log.jsonl` | `run_pilot.py` | 每次 attempt 一行 JSON：instance、condition、resolved、workspace_hash、first_step_error 等 | **gitignore**（运行后本地生成） |
+| `run_log.jsonl` | `run_pilot.py` | 每次 attempt 一行 JSON：instance、condition、attempt、resolved、first_step_error、initial/pre/post workspace hash 等 | **gitignore**（运行后本地生成） |
 | `trajectories/` | `run_pilot.py` | 每次运行的 mini-SWE-agent 轨迹 JSON | **gitignore**（保留 `.gitkeep`） |
 | `predictions/` | `run_pilot.py` | SWE-bench 格式的 prediction JSONL，供 harness 评估 | **gitignore**（保留 `.gitkeep`） |
 | `metrics/pilot_summary.json` | `analyze_pilot.py` | CR / RG / WSD 汇总 + Go 建议 | **gitignore** |
@@ -234,12 +235,14 @@ python update_decision_draft.py
 python validate_pilot_setup.py
 python run_pilot.py --smoke-test          # 测 Docker + mini-SWE-agent
 python run_pilot.py --execute --reset-log # 真实跑（慢、耗 API）
-python merge_evaluation_results.py --results path/to/evaluation_results.json
+python merge_evaluation_results.py --results path/to/evaluation_results.json `
+  --condition dirty-retry --attempt 1
+python state_control_validation.py
 python analyze_pilot.py
 python update_decision_draft.py
 ```
 
-成功阈值（pilot → Go）：Recovery Gap ≥ 5 pp；world-reset wins ≥ 2/10。详见 `outputs/pilot/README.md` 与 `topics/state_contamination/experiment_plan.md`。
+10 题运行现在定位为 **infrastructure pilot**：验证状态控制、严格 merge、日志格式和指标是否可计算。Recovery Gap ≥ 5 pp、world-reset wins ≥ 2/10 只能作为扩样信号，不能单独支持论文级 Go。详见 `outputs/pilot/README.md` 与 `topics/state_contamination/experiment_plan.md`。
 
 ---
 

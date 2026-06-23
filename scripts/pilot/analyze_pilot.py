@@ -32,6 +32,7 @@ class ConditionMetrics:
 @dataclass
 class PilotMetrics:
     n_instances: int
+    evidence_level: str
     recovery_gap_pp: float
     world_reset_wins: int
     world_reset_win_rate: float
@@ -61,8 +62,13 @@ def validate_rows(rows: list[dict], cfg: dict, *, allow_mock: bool, allow_unvali
 
     if any(row.get("first_step_error") is None for row in rows):
         warnings.append("some rows lack first_step_error; CR may be null or incomplete")
-    if any(not row.get("workspace_hash") or not row.get("initial_workspace_hash") for row in rows):
-        warnings.append("some rows lack workspace hashes; WSD may be null or incomplete")
+    if any(
+        not row.get("workspace_hash")
+        or not row.get("initial_workspace_hash")
+        or not row.get("pre_attempt_workspace_hash")
+        for row in rows
+    ):
+        warnings.append("some rows lack initial/pre/post workspace hashes; WSD and state-control evidence may be incomplete")
 
     if errors:
         detail = "\n".join(f"- {error}" for error in errors)
@@ -93,7 +99,21 @@ def first_step_error_rate(attempts: list[dict], attempt_nums: set[int]) -> float
     return sum(1 for a in subset if a["first_step_error"]) / len(subset)
 
 
+def evidence_level_for_n(n_instances: int, thresholds: dict) -> str:
+    infrastructure_max = int(thresholds.get("infrastructure_max_n", 10))
+    signal_min = int(thresholds.get("signal_min_n", 20))
+    paper_min = int(thresholds.get("paper_min_n", 50))
+    if n_instances <= infrastructure_max:
+        return "infrastructure"
+    if n_instances < signal_min:
+        return "pre-signal"
+    if n_instances < paper_min:
+        return "signal"
+    return "paper"
+
+
 def analyze_rows(rows: list[dict], thresholds: dict, warnings: list[str] | None = None) -> PilotMetrics:
+    warnings = list(warnings or [])
     by_inst_cond: dict[tuple[str, str], list[dict]] = defaultdict(list)
     for row in rows:
         by_inst_cond[(row["instance_id"], row["condition"])].append(row)
@@ -166,8 +186,15 @@ def analyze_rows(rows: list[dict], thresholds: dict, warnings: list[str] | None 
     go_rg = float(thresholds.get("recovery_gap_go_pp", 5.0))
     nogo_rg = float(thresholds.get("recovery_gap_nogo_pp", 3.0))
     min_wins = int(thresholds.get("world_reset_wins_min", 2))
+    evidence_level = evidence_level_for_n(n, thresholds)
 
-    if rg_pp >= go_rg and world_reset_wins >= min_wins:
+    if evidence_level == "infrastructure":
+        recommendation = "Hold"
+        warnings.append(
+            "10-instance infrastructure pilot can validate plumbing and non-zero signal, "
+            "but must not be used as paper-level Go evidence"
+        )
+    elif rg_pp >= go_rg and world_reset_wins >= min_wins:
         recommendation = "Go"
     elif rg_pp < nogo_rg:
         recommendation = "No-Go"
@@ -176,6 +203,7 @@ def analyze_rows(rows: list[dict], thresholds: dict, warnings: list[str] | None 
 
     return PilotMetrics(
         n_instances=n,
+        evidence_level=evidence_level,
         recovery_gap_pp=rg_pp,
         world_reset_wins=world_reset_wins,
         world_reset_win_rate=win_rate,
@@ -190,6 +218,7 @@ def analyze_rows(rows: list[dict], thresholds: dict, warnings: list[str] | None 
 def metrics_to_dict(m: PilotMetrics) -> dict:
     return {
         "n_instances": m.n_instances,
+        "evidence_level": m.evidence_level,
         "recovery_gap_pp": round(m.recovery_gap_pp, 2),
         "world_reset_wins": m.world_reset_wins,
         "world_reset_win_rate": round(m.world_reset_win_rate, 3),
@@ -233,6 +262,7 @@ def main() -> int:
     metrics_out.write_text(json.dumps(payload, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 
     print(f"Instances: {result.n_instances}")
+    print(f"Evidence level: {result.evidence_level}")
     print(f"Recovery Gap (clean-restart - dirty-retry): {result.recovery_gap_pp:.2f} pp")
     print(f"World-reset wins (C resolved, B not): {result.world_reset_wins}/{result.n_instances}")
     print(f"Recommendation: {result.recommendation}")

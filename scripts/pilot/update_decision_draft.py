@@ -26,11 +26,18 @@ def main() -> int:
 
     m = json.loads(args.metrics.read_text(encoding="utf-8"))
     rec = m["recommendation"]
+    evidence_level = m.get("evidence_level", "unknown")
     rg = m["recovery_gap_pp"]
     wins = m["world_reset_wins"]
     n = m["n_instances"]
 
-    if rec == "Go":
+    if evidence_level == "infrastructure":
+        decision = "Hold"
+        reason = (
+            f"Infrastructure pilot only (n={n}). RG={rg:.2f}pp and world-reset wins={wins}/{n} "
+            "can guide whether to scale, but must not be treated as paper-level Go evidence."
+        )
+    elif rec == "Go":
         decision = "Go"
         reason = f"Pilot RG={rg:.2f}pp (>=5), world-reset wins={wins}/{n} (>=2)."
     elif rec == "No-Go":
@@ -55,13 +62,15 @@ def main() -> int:
 |--------|-------|-----------|
 | Recovery Gap | {rg:.2f} pp | Go >= 5 pp |
 | World-reset wins | {wins}/{n} | Go >= 2/{n} |
+| Evidence level | {evidence_level} | infrastructure / signal / paper |
 | Recommendation | {rec} | — |
 
 ## Manual steps after merge
 
 1. Update `topics/state_contamination/decision.md` Decision + Reason tables
 2. Re-run `topics/state_contamination/file_consistency_check.md`
-3. If Go: extend experiment_plan to 50–100 instances
+3. If infrastructure-level Hold: scale to 20–30 instances before claiming Go
+4. If Go at signal/paper level: extend experiment_plan to 50–100 instances
 """
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(draft, encoding="utf-8")

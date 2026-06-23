@@ -1,14 +1,15 @@
 #!/usr/bin/env python3
 """Merge SWE-bench evaluation resolved labels into run_log.jsonl.
 
-Accepted input formats:
+The pilot runs the same instance under multiple conditions and attempts, so a
+resolved label is only safe to merge when it is keyed by:
 
-1. JSON object mapping instance_id -> bool
-2. JSON object mapping instance_id -> {"resolved": bool}
-3. JSON list of objects with instance_id and resolved/is_resolved/success
+    instance_id + condition + attempt
 
-The merge updates all rows for the matching instance. If you evaluate each
-attempt separately, include attempt and condition fields in the evaluation rows.
+If an evaluation output only contains instance_id -> resolved, pass
+--condition and --attempt for the prediction file being merged. Otherwise the
+script refuses to merge instead of silently copying one result to unrelated
+conditions/attempts.
 """
 
 from __future__ import annotations
@@ -36,43 +37,103 @@ def extract_bool(value: Any) -> bool | None:
     return None
 
 
-def load_results(path: Path) -> dict[tuple[str, str | None, int | None], bool]:
+def coerce_attempt(value: Any) -> int | None:
+    if value is None:
+        return None
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def get_condition(item: dict[str, Any]) -> str | None:
+    value = item.get("condition", item.get("pilot_condition"))
+    return str(value) if value is not None else None
+
+
+def get_attempt(item: dict[str, Any]) -> int | None:
+    return coerce_attempt(item.get("attempt", item.get("pilot_attempt")))
+
+
+def add_result(
+    results: dict[tuple[str, str, int], bool],
+    *,
+    instance_id: str,
+    condition: str | None,
+    attempt: int | None,
+    resolved: bool,
+    errors: list[str],
+) -> None:
+    if not condition or attempt is None:
+        errors.append(
+            f"{instance_id}: missing condition/attempt; pass --condition and --attempt "
+            "or include condition+attempt in the evaluation row"
+        )
+        return
+    key = (instance_id, condition, attempt)
+    if key in results:
+        errors.append(f"duplicate evaluation result for {key}")
+        return
+    results[key] = resolved
+
+
+def load_results(
+    path: Path,
+    *,
+    condition_override: str | None,
+    attempt_override: int | None,
+) -> dict[tuple[str, str, int], bool]:
     data = json.loads(path.read_text(encoding="utf-8"))
-    results: dict[tuple[str, str | None, int | None], bool] = {}
+    results: dict[tuple[str, str, int], bool] = {}
+    errors: list[str] = []
 
     if isinstance(data, dict):
         for instance_id, value in data.items():
             resolved = extract_bool(value)
             if resolved is not None:
-                condition = value.get("condition") if isinstance(value, dict) else None
-                attempt = value.get("attempt") if isinstance(value, dict) else None
-                results[(instance_id, condition, attempt)] = resolved
+                condition = condition_override
+                attempt = attempt_override
+                if isinstance(value, dict):
+                    condition = get_condition(value) or condition
+                    attempt = get_attempt(value) if get_attempt(value) is not None else attempt
+                add_result(
+                    results,
+                    instance_id=str(instance_id),
+                    condition=condition,
+                    attempt=attempt,
+                    resolved=resolved,
+                    errors=errors,
+                )
     elif isinstance(data, list):
         for item in data:
             if not isinstance(item, dict) or "instance_id" not in item:
                 continue
             resolved = extract_bool(item)
             if resolved is not None:
-                results[(item["instance_id"], item.get("condition"), item.get("attempt"))] = resolved
+                add_result(
+                    results,
+                    instance_id=str(item["instance_id"]),
+                    condition=get_condition(item) or condition_override,
+                    attempt=get_attempt(item) if get_attempt(item) is not None else attempt_override,
+                    resolved=resolved,
+                    errors=errors,
+                )
+    else:
+        errors.append(f"unsupported evaluation result format in {path}")
+    if errors:
+        detail = "\n".join(f"- {error}" for error in errors[:20])
+        raise ValueError(f"Unsafe evaluation merge input:\n{detail}")
     return results
 
 
 def lookup(
-    results: dict[tuple[str, str | None, int | None], bool],
+    results: dict[tuple[str, str, int], bool],
     *,
     instance_id: str,
     condition: str,
     attempt: int,
 ) -> bool | None:
-    for key in (
-        (instance_id, condition, attempt),
-        (instance_id, condition, None),
-        (instance_id, None, attempt),
-        (instance_id, None, None),
-    ):
-        if key in results:
-            return results[key]
-    return None
+    return results.get((instance_id, condition, attempt))
 
 
 def main() -> int:
@@ -81,7 +142,12 @@ def main() -> int:
     parser.add_argument("--results", type=Path, required=True, help="Evaluation JSON file")
     parser.add_argument("--run-log", type=Path, help="Override run_log.jsonl path")
     parser.add_argument("--output", type=Path, help="Output run_log path; defaults to in-place")
+    parser.add_argument("--condition", choices=["dirty-retry", "clean-restart", "full-reset"], help="Condition for instance-only evaluation outputs")
+    parser.add_argument("--attempt", type=int, help="Attempt number for instance-only evaluation outputs")
     args = parser.parse_args()
+
+    if (args.condition is None) != (args.attempt is None):
+        parser.error("--condition and --attempt must be provided together")
 
     with args.config.open(encoding="utf-8") as f:
         cfg = yaml.safe_load(f)
@@ -89,7 +155,11 @@ def main() -> int:
     run_log = args.run_log or (REPO_ROOT / cfg["paths"]["run_log"]).resolve()
     output = args.output or run_log
     rows = load_jsonl(run_log)
-    results = load_results(args.results)
+    try:
+        results = load_results(args.results, condition_override=args.condition, attempt_override=args.attempt)
+    except ValueError as exc:
+        print(str(exc))
+        return 1
 
     updated = 0
     for row in rows:

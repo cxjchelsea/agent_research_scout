@@ -21,6 +21,7 @@ class AttemptRecord:
     resolved: bool | None
     run_mode: str = "unknown"
     first_step_error: bool | None = None
+    pre_attempt_workspace_hash: str | None = None
     workspace_hash: str | None = None
     initial_workspace_hash: str | None = None
     context_token_count: int | None = None

@@ -343,7 +343,12 @@ Phase 2 的目标是论文级文献地图，不要求所有 40–60 篇都有 pa
 Phase 3 不能只写计划，必须产生或合并 evidence：
 
 - pilot / smoke / mock 必须在 `outputs/` 中可区分，mock 只能验证管道，不能作为研究证据；
+- 必须先通过 state-control 验证：dirty-retry 保留 context+world，clean-restart 重置 context 但保留 world，full-reset 同时重置 context+world；
+- 合并 SWE-bench resolved 标签时，必须精确匹配 `instance_id + condition + attempt`；缺少 condition 或 attempt 的结果不得宽松合并；
 - `decision.md` 必须说明实验是否满足 adversarial_review 中的 minimum evidence；
+- 10 题 pilot 只能作为 infrastructure pilot；若要支持 Go，至少需要 signal pilot（20–30 题）或等价 minimum evidence；
+- WSD 不能只报告 hash drift；必须区分 WSD-basic、source/residual drift、harmful drift 或说明为何暂不可计算；
+- CR 如果依赖 `first_step_error`，必须说明 judge / 人工校验方式；缺失 step-level evidence 时不得把 CR 当核心指标；
 - 如果 pilot 不支持核心效应，应优先 Narrow / Hold，而不是继续扩大 claims；
 - 如果实验暴露新的 baseline 或 failure mode，应回到 Phase 2 扩库并更新 related work。
 
