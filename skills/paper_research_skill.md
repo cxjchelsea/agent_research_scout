@@ -295,12 +295,74 @@ agent-research-scout/
 10. outputs/                执行 pilot / 实验
 ```
 
+### 分阶段调研闭环（必须显式标注当前 Phase）
+
+上面的 10 步是**文件写作顺序**，不是一次性投稿完成标准。每次执行本 skill 时，必须先判断当前课题处于哪个 Phase，并在 `decision.md` 与 `file_consistency_check.md` 中写明。
+
+| Phase | 名称 | 目标 | 最低完成标准 | 允许的决策 |
+|-------|------|------|--------------|------------|
+| 0 | Intake / Scope | 把用户的模糊方向变成可调研课题 | `topic_brief.md` 有一句话定义、边界、最危险相邻方向 | Hold / Continue |
+| 1 | Scouting | 判断方向是否值得进入 MVP / pilot | `paper_table.csv` ≥15 篇 verified/uncertain 分明；`core_read=yes` 通常 8 篇；完成 gap + adversarial + consistency | Narrow / Hold / No-Go |
+| 2 | Expansion | 把选题侦察扩成论文级 related work 地图 | `paper_table.csv` 通常 40–60+ 篇；`core_read=yes` 通常 12–20 篇；补齐 survey、引用链、同期 work、强 baseline | Narrow / Go / Hold |
+| 3 | Validation | 用 pilot 或 minimum evidence 验证核心效应 | `outputs/` 有可审计日志/指标；`decision.md` 根据实验更新；失败时回到 Phase 1/2 收窄 | Go / Narrow / Hold / No-Go |
+| 4 | Paper-ready Audit | 投稿前完整性审计 | related work 覆盖主要簇；最危险 5–8 篇正面比较；claims 与 evidence 对齐；实验计划可扩到 full study | Go / Hold |
+
+#### Phase 1 — Scouting（默认起点）
+
+当用户只给出一个想调研的方向时，默认先做 Phase 1，而不是承诺完成投稿级调研。Phase 1 的产物用于回答：
+
+- 这个方向是否真实、重要、可验证？
+- 是否已有工作完整覆盖？
+- 是否能收窄到一个 MVP benchmark / baseline / metric？
+- 是否值得投入 pilot？
+
+Phase 1 完成后，如果 `decision.md` 是 **Narrow**，不能声称“完整调研完成”，只能说“选题侦察完成，可进入 pilot 或扩库”。
+
+#### Phase 2 — Expansion（论文级扩库）
+
+进入 Phase 2 的触发条件：
+
+- Phase 1 为 Narrow / Go，且用户希望继续推进成论文；
+- 或 adversarial_review 指出 related work 覆盖不足；
+- 或 pilot 前需要补强 baseline / benchmark / method 线索。
+
+Phase 2 必须使用增量方式，不删除 Phase 1 产物：
+
+1. 从核心 8 篇做 backward / forward snowball（参考文献 + citing papers）。
+2. 补 survey / taxonomy / benchmark / method / system / evaluation 五类文献。
+3. 将 `paper_table.csv` 扩到通常 40–60+ 篇；少于 40 篇时必须解释领域过窄或检索边界。
+4. 将 `core_read=yes` 扩到通常 12–20 篇；新增 card 优先给最危险竞品、强 baseline、实验底座、定义/术语威胁。
+5. 重写或增补 `related_work.md`，按问题簇组织，而不是按检索顺序堆论文。
+6. 更新 `gap_analysis.md` 中“已覆盖/未覆盖”的判断，重新做最危险 5–8 篇正面比较。
+7. 重新运行 `adversarial_review.md` 与 `file_consistency_check.md`，并更新 `decision.md`。
+
+Phase 2 的目标是论文级文献地图，不要求所有 40–60 篇都有 paper card；`core_read=no` 可只在 table 和 related_work 中作为背景或相邻工作引用。
+
+#### Phase 3 — Validation（实验验证）
+
+Phase 3 不能只写计划，必须产生或合并 evidence：
+
+- pilot / smoke / mock 必须在 `outputs/` 中可区分，mock 只能验证管道，不能作为研究证据；
+- `decision.md` 必须说明实验是否满足 adversarial_review 中的 minimum evidence；
+- 如果 pilot 不支持核心效应，应优先 Narrow / Hold，而不是继续扩大 claims；
+- 如果实验暴露新的 baseline 或 failure mode，应回到 Phase 2 扩库并更新 related work。
+
+#### Phase 4 — Paper-ready Audit（投稿前审计）
+
+Phase 4 用于检查是否接近论文初稿，而不是继续堆论文数量。必须确认：
+
+- Related Work 覆盖直接竞品、相邻 benchmark、方法 baseline、failure taxonomy、survey；
+- 最危险 5–8 篇都有正面比较，不只是一句 limitation；
+- claims、metrics、baseline、dataset、pilot/full experiment 证据完全一致；
+- `decision.md` 的 Go 不是只基于 Phase 1 的 15+8 下限；
+- 仍未解决的威胁写入 limitation / future work，而不是藏在文件外。
+
 **关键约束**：
 
 - `experiment_plan.md` **不得**早于 `gap_analysis.md` 和 `adversarial_review.md`
 - `decision.md` **不得**早于 `file_consistency_check.md`
 - `gap_analysis` 收窄后，**必须同步** `topic_brief.md`
-- 重调研（方案 A）时：**保留**旧文件，增量审计更新，不整库删除
+- 重调研、扩库或 Phase 回退时：**保留**旧文件，增量审计更新，不整库删除
 
 ### 新开课题
 
@@ -356,7 +418,8 @@ agent-research-scout/
 ### core_read 规则
 
 - `core_read=yes` 的论文：**必须**有 `paper_cards/<slug>.md`
-- 通常选 8 篇：最直接威胁 + 实验底座 + 方法/benchmark 边界
+- Phase 1 通常选 8 篇：最直接威胁 + 实验底座 + 方法/benchmark 边界
+- Phase 2 通常扩到 12–20 篇：新增最危险竞品、强 baseline、survey / taxonomy、同期 work、可复现实验底座
 - uncertain / remove 论文：**不得**设 core_read=yes
 
 ------
@@ -469,9 +532,9 @@ agent-research-scout/
 
 **产出文件**：`topics/<topic>/decision.md`（模板：`templates/decision_template.md`）。
 
-### Go 条件
+### Pilot-ready / Pilot Go 条件（Phase 1 / 3）
 
-满足以下**全部**条件，才可以标 **Go** 并进入 pilot / full experiment：
+Phase 1 满足第 1–12 条但尚未跑 pilot 时，最高只能标 **Narrow**，含义是“可进入 pilot / 最小实验”。Phase 3 跑完 pilot 或取得 minimum evidence，并满足第 13 条后，才可以标 **Go**：
 
 1. 至少 8 篇核心论文已核验（verified）。
 2. 至少 5 篇核心论文已有 paper card（通常 8/8）。
@@ -486,6 +549,18 @@ agent-research-scout/
 11. 有最小实验方案（experiment_plan MVP 段）。
 12. uncertain 论文没有被当作核心论据。
 13. **pilot 或 minimum evidence 已满足** adversarial_review 中的阈值（若尚未跑 pilot → 最高只能 **Narrow**，不能 Go）。
+
+### Paper-ready Go 条件（Phase 2 / 4）
+
+如果目标是投稿级调研或论文初稿，不能只满足 Pilot Go。还必须满足：
+
+1. `paper_table.csv` 通常达到 40–60+ 篇 verified / uncertain 分明；少于 40 篇必须说明检索边界。
+2. `core_read=yes` 通常达到 12–20 篇，且全部有 paper card。
+3. 至少覆盖 direct competitors、benchmarks、methods/baselines、failure taxonomy、survey/position work、同期 arXiv 六类中的相关类别。
+4. 最危险 5–8 篇 related work 已经正面比较，不能只比较 3 篇。
+5. `related_work.md` 已重写为论文级叙事：按问题簇组织，说明本案相对每一簇的增量。
+6. Phase 3 的 pilot / minimum evidence 已支持核心 claim，或已明确降级 claim。
+7. `file_consistency_check.md` 明确标注当前为 Phase 4，并通过 paper-ready audit。
 
 ### No-Go 条件
 
