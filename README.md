@@ -71,6 +71,7 @@ Phase 4  Quick Proof   MVP 实验 → Go（值得继续投入）/ Hold / No-Go
 | 模板 | 产出 |
 |------|------|
 | `landscape_scan_template.md` | `scout/landscape_scan.md` |
+| `discovery_paper_table_template.csv` | `scout/discovery_paper_table.csv` |
 | `candidates_template.md` | `scout/candidates.md` |
 
 ### 深研阶段（`topics/<topic>/`）

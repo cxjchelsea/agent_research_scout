@@ -183,9 +183,9 @@
 | 文件 | 职责 | 模板 |
 |------|------|------|
 | `landscape_scan.md` | 跨方向文献地图：8 大类/sub-cluster 的覆盖与空白 | `templates/landscape_scan_template.md` |
-| `discovery_paper_table.csv` | 发现阶段广搜索引，通常 30–50 篇，跨多个候选方向 | 列格式同 §八，但 `relevance_to_<topic>` 可改为 `relevance_to_candidate` |
+| `discovery_paper_table.csv` | 发现阶段广搜索引，通常 30–50 篇，跨多个候选方向 | `templates/discovery_paper_table_template.csv`（无 `core_read` 列） |
 | `candidates.md` | 3–7 个候选方向对比、评分、MVP 验证思路、推荐排序 | `templates/candidates_template.md` |
-| `selection.md` | 用户最终选中的方向与 slug（Agent 不得替用户做最终选择） | 见 `candidates.md` §6 |
+| `selection.md` | 用户最终选中的方向与 slug（Agent 不得替用户做最终选择） | 见 `candidates.md` §7 |
 
 发现阶段 **不要求** `paper_cards/`。候选方向只需在 table 和 `candidates.md` 中有足够论据。
 
@@ -449,9 +449,20 @@ Phase 4 不要求：大规模实验、置信区间、论文级 error analysis、
 
 ## 八、真实性核验要求
 
-所有论文、benchmark、数据集、代码库、会议接收信息都必须经过核验，写入 `paper_table.csv`。
+所有论文、benchmark、数据集、代码库、会议接收信息都必须经过核验，写入 `discovery_paper_table.csv`（Phase 1）或 `topics/<topic>/paper_table.csv`（Phase 3）。
 
-### paper_table.csv 必填列
+### discovery_paper_table.csv 必填列（Phase 1）
+
+模板：`templates/discovery_paper_table_template.csv`
+
+- title, year, venue, category, type
+- problem, benchmark, metrics, limitation
+- **relevance_to_candidate**, relevance_score（说明与哪个候选方向相关）
+- url, authors, source_type, verified_status, verification_note
+
+**不设** `core_read` 列；发现阶段不要求 `paper_cards/`。
+
+### paper_table.csv 必填列（Phase 3）
 
 - title, year, venue, category, type
 - problem, benchmark, metrics, limitation
