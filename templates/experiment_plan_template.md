@@ -1,7 +1,10 @@
 # Experiment Plan: {{topic_name}}
 
-> **前置条件**：`gap_analysis.md` + `adversarial_review.md` + `file_consistency_check.md` 完成后方可填写。  
+> **Experiment Plan Status**：draft / ready
+> **前置条件**：`gap_analysis.md` + `adversarial_review.md` + `file_consistency_check.md` 完成后方可填写。
 > **决策联动**：见 `decision.md`
+
+> 若最大威胁 work 尚未完成 Phase 3.5 targeted verification，本文件状态只能是 **draft**，不得进入 Phase 4 execution。
 
 ---
 

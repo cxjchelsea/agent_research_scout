@@ -49,6 +49,18 @@
 
 （至少 3 篇，逐篇对比维度）
 
+### 3.1 Claim Coverage Matrix（最大威胁 1–3 篇必填）
+
+| Threat work | Claim component | Covered by threat work? | Evidence | Implication |
+|-------------|-----------------|--------------------------|----------|-------------|
+| | 核心问题定义 | yes / partial / no | 原文依据或方法边界 | |
+| | proposed mechanism | yes / partial / no | 原文依据或方法边界 | |
+| | benchmark / evaluation setting | yes / partial / no | 原文依据或方法边界 | |
+| | baseline / comparison | yes / partial / no | 原文依据或方法边界 | |
+| | utility / risk trade-off | yes / partial / no | 原文依据或方法边界 | |
+
+> 如果最大威胁 work 的 Evidence 为空，或 paper card 未达到 `threat_verified`，不得把 Phase 3 判定为 complete。
+
 ---
 
 ## 4. 最小可行创新点（MVP）

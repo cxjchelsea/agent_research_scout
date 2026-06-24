@@ -1,6 +1,6 @@
 # Agent Research Scout
 
-Research scouting workspace: **discover innovation points → select a direction → deep dive → quick proof**.
+Research scouting workspace: **discover innovation points → select a direction → deep dive → targeted verification → quick proof**.
 
 ---
 
@@ -34,12 +34,13 @@ agent-research-scout/
 
 ---
 
-## 四阶段 Workflow
+## 五阶段 Workflow
 
 ```text
 Phase 1  Discovery     scout/landscape_scan + discovery_paper_table + candidates
 Phase 2  Selection     scout/selection.md → 创建 topics/<topic>/
 Phase 3  Deep Dive     topics/ 下 15+8 深研 → Promising / Narrow / No-Go
+Phase 3.5 Targeted Verification  最大威胁 work claim-level verification
 Phase 4  Quick Proof   MVP 实验 → Go（值得继续投入）/ Hold / No-Go
 ```
 
@@ -48,9 +49,12 @@ Phase 4  Quick Proof   MVP 实验 → Go（值得继续投入）/ Hold / No-Go
 | 1 Discovery | `scout/` | `landscape_scan.md`、`discovery_paper_table.csv`（30–50 篇）、`candidates.md`（3–7 候选） |
 | 2 Selection | `scout/` | `selection.md`（用户选定方向） |
 | 3 Deep Dive | `topics/<topic>/` | `paper_table.csv`（≥15）、`paper_cards/`（8）、gap、adversarial、decision |
+| 3.5 Targeted Verification | `topics/<topic>/` | 最大威胁 paper card 达到 `threat_verified`、claim coverage matrix |
 | 4 Quick Proof | `topics/<topic>/` + `outputs/` | `experiment_plan.md`、MVP 实验证据、更新 decision |
 
 **Go 的含义**：创新点已通过最小实验验证，**值得继续投入**——不等于可以投稿。
+
+**硬门槛**：最大威胁 work 未完成 claim-level targeted verification 前，`experiment_plan.md` 只能是 draft，不能进入 Phase 4 execution。
 
 ---
 

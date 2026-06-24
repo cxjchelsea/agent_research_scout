@@ -54,4 +54,4 @@
 | 攻击全部成立 | No-Go |
 | 部分成立，可收窄 | Narrow |
 | 需补证据 | Hold |
-| 攻击可回应且有 pilot 路径 | Go（待证据） |
+| 攻击可回应且 targeted verification 完成，有 pilot 路径 | Promising（Phase 3 后） |
