@@ -1,4 +1,4 @@
-# Decision: Transaction-Safe Agent State Boundaries
+# Decision: Recovery-Safe Memory Provenance for Tool-Using Agents
 
 > **审计日期**：2026-06-24
 > **Skill 版本**：paper_research_skill.md
@@ -6,12 +6,12 @@
 
 ---
 
-## Decision: Hold
+## Decision: Narrow
 
 > **Current Phase**：3（Deep Dive）
 > Go 仅用于 Phase 4：表示创新点已通过 MVP 验证，值得继续投入。
 
-用户已选择 C3，当前仅完成 Phase 2 selection 与 Phase 3 初始化；尚未完成 15+8 深研、paper cards、正式 gap analysis 和完整一致性审计，因此暂标 **Hold**。这里的 Hold 表示证据不足、需要补 Phase 3 深研，不是否定方向。
+原始 C3 方向过宽，ACRFence 已强覆盖 external side-effect rollback。当前收窄为 **Recovery-Safe Memory Provenance for Tool-Using Agents**：研究 recovery / rollback / branch 后长期 memory 写入的 provenance、validity 与 quarantine。方向可继续，但 claim 必须围绕 memory provenance，而不是泛化 transaction-safe state boundary。
 
 ---
 
@@ -21,15 +21,15 @@
 
 | # | 条件 | 状态 |
 |---|------|------|
-| 1 | 至少 8 篇核心论文已核验 | 未满足；当前仅种子表 |
-| 2 | 至少 5 篇核心论文已有 paper card | 未满足 |
-| 3 | gap_analysis 明确指出已有工作覆盖/未覆盖 | 未满足；当前为初步假设 |
-| 4 | adversarial_review 已完成且风险有回应 | 部分满足；已有初步攻击，未完成深研回应 |
-| 5 | file_consistency_check 通过 | 未满足；存在 outdated / risky |
-| 6 | 最危险 3 篇 related work 正面比较 | 未满足 |
-| 7 | 课题已收窄到可实验场景 | 部分满足；mock tool boundary 初步可行 |
-| 8 | 有明确 benchmark 或可构造数据 | 部分满足；需正式 experiment_plan |
-| 9 | 有 baseline 与至少 3 个指标 | 部分满足；来自候选阶段假设 |
+| 1 | 至少 8 篇核心论文已核验 | 满足；8 篇 core_read=yes 且 verified |
+| 2 | 至少 5 篇核心论文已有 paper card | 满足；8 篇 paper cards |
+| 3 | gap_analysis 明确指出已有工作覆盖/未覆盖 | 满足 |
+| 4 | adversarial_review 已完成且风险有回应 | 满足；仍有中等 novelty 风险 |
+| 5 | file_consistency_check 通过 | 待最终更新 |
+| 6 | 最危险 3 篇 related work 正面比较 | 满足；ACRFence、AgentDojo、ASB、AgentPoison 已比较 |
+| 7 | 课题已收窄到可实验场景 | 满足；recovery-safe memory provenance |
+| 8 | 有明确 benchmark 或可构造数据 | 满足；mock tool + memory scenarios |
+| 9 | 有 baseline 与至少 3 个可量化指标 | 满足 |
 | 10 | uncertain 论文没有作为核心论据 | 满足 |
 
 ### Phase 4 条件检查（Quick Proof 后，才可 Go）
@@ -43,11 +43,11 @@
 
 | 条件 | 是否触发 |
 |------|----------|
-| 核心问题已被已有论文完整覆盖 | 未知；ACRFence 需优先核验 |
-| 只能通过换术语制造新颖性 | 未知；当前存在风险 |
-| 没有可复现实验路径 | 暂未触发 |
-| 没有强 baseline | 暂未触发 |
-| MVP 成本超出 2–4 个月 | 暂未触发 |
+| 核心问题已被已有论文完整覆盖 | 未触发；ACRFence 覆盖 rollback side effects 但未确认覆盖 memory provenance |
+| 只能通过换术语制造新颖性 | 未触发但有风险；已收窄并定义 recovery / branch 变量 |
+| 没有可复现实验路径 | 未触发 |
+| 没有强 baseline | 未触发 |
+| MVP 成本超出 2–4 个月 | 未触发 |
 | 主要论据依赖 uncertain 论文 | 未触发 |
 
 ---
@@ -57,13 +57,13 @@
 | 项 | 内容 |
 |----|------|
 | 旧题目 | Transaction-Safe Agent State Boundaries |
-| 新题目 | 待 Phase 3 深研后决定 |
+| 新题目 | Recovery-Safe Memory Provenance for Tool-Using Agents |
 
 ---
 
 ## Minimum next step
 
-扩展 `paper_table.csv` 至 ≥15 篇，优先精读并创建 paper cards：ACRFence、AgentDojo、ASB、ToolEmu、OpenHands、SWE-agent、AutoGen，以及 memory provenance / stale memory / memory poisoning 相关工作。
+进入 Phase 4 Quick Proof 前，先实现 5 个 pilot scenarios：tool observation 写入 memory → rollback/fork/retry → later retrieval。最小比较 B1 Naive persistent memory、B3 ACRFence-like tool-effect log、Ours provenance-filtered memory。
 
 ---
 
@@ -71,10 +71,10 @@
 
 | 证据 | 决策变化 |
 |------|----------|
-| ACRFence 已完整覆盖 tool effect + credential + memory provenance + branch semantics | No-Go |
-| ACRFence 只覆盖 rollback/external side effects，不覆盖 memory provenance 或 branch contamination | Narrow / Promising |
-| 找不到可复现实验场景或强 baseline | Hold / No-Go |
-| 能构造 20–30 个 mock tool tasks 且普通 retry / ACRFence-like baseline 仍失败 | Promising（Phase 3 后） |
+| ACRFence 已完整覆盖 memory provenance / store rollback / branch-aware retrieval | No-Go |
+| Pilot 显示 B1/B3 都没有 contaminated memory reuse 问题 | No-Go |
+| Ours 降低污染复用但 benign memory utility 下降过大 | Hold |
+| Ours 比 B1/B3 降低 ≥50% contaminated memory reuse 且 utility 下降 ≤10% | Promising / Phase 4 Go 候选 |
 
 ---
 
@@ -82,18 +82,18 @@
 
 | 维度 | 分 | 说明 |
 |------|-----|------|
-| 重要性 | 9 | 影响真实 agent recovery / retry / safety |
-| 新颖性 | 8 | 候选阶段评分，需经 ACRFence 深研验证 |
-| 可形式化 | 8 | tool effect / memory provenance / branch semantics 可形式化 |
-| 可验证性 | 8 | mock tool MVP 可构造 |
-| 方法空间 | 8 | replay-or-fork、quarantine、credential invalidation |
-| 泛化性 | 8 | 可跨工具类型 |
-| 顶会匹配 | 8 | agent reliability / security / systems |
+| 重要性 | 9 | recovery + long-term memory 是真实 agent 部署问题 |
+| 新颖性 | 7 | ACRFence / AgentPoison 很强，需靠交界问题成立 |
+| 可形式化 | 8 | provenance、branch、checkpoint、validity 可形式化 |
+| 可验证性 | 8 | mock tool + memory MVP 可构造 |
+| 方法空间 | 7 | quarantine / provenance-filtered retrieval |
+| 泛化性 | 7 | 可跨工具类型，模型泛化待验证 |
+| 顶会匹配 | 7 | agent reliability / security / memory |
 | 工程可行 | 8 | 2–4 个月内可做 MVP |
-| Baseline 清晰 | 8 | ordinary retry、idempotency key、ACRFence-like |
-| 风险可控 | 8 | 候选阶段估计；当前需下调审慎看待 |
+| Baseline 清晰 | 8 | B1/B2/B3/Ours 明确 |
+| 风险可控 | 6 | novelty 和 toy benchmark 风险仍在 |
 
-**总评**：候选阶段 8.1；Phase 3 尚未完成，当前不作为正式 decision。
+**总评**：7.5，**Narrow**。方向可做，但必须围绕 recovery-safe memory provenance，不宜继续使用 broad transaction-safe state boundary claim。
 
 ---
 

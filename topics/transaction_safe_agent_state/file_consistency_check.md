@@ -1,4 +1,4 @@
-# File Consistency Check: Transaction-Safe Agent State Boundaries
+# File Consistency Check: Recovery-Safe Memory Provenance for Tool-Using Agents
 
 > **目的**：检查 topic 目录内所有调研文件是否一致，防止 topic_brief / gap / experiment 相互矛盾。
 > **审计日期**：2026-06-24
@@ -9,14 +9,14 @@
 
 | File | Status | Required Update |
 |------|--------|-----------------|
-| topic_brief.md | consistent | Phase 3 深研后若收窄需同步 |
-| paper_table.csv | needs verification | 当前 8 篇种子论文，未达到 ≥15；uncertain 条目不能作为核心论据 |
-| related_work.md | outdated | 仅占位，需按 category 完成 |
-| paper_cards/ | incomplete | 当前未设置 core_read=yes，也未完成 cards |
-| gap_analysis.md | risky | 初步 gap，依赖后续深研 ACRFence |
-| adversarial_review.md | consistent | 初步攻击已指出最大风险 |
-| experiment_plan.md | not ready | Phase 3 未完成，不填写 MVP |
-| decision.md | ready | 当前为 Hold：证据不足，需补 Phase 3 深研 |
+| topic_brief.md | consistent | 已同步收窄到 Recovery-Safe Memory Provenance |
+| paper_table.csv | consistent | 16 篇；8 篇 core_read=yes；uncertain 不作核心论据 |
+| related_work.md | consistent | 已按 rollback/tool security/memory poisoning/memory evaluation/runtime 分组 |
+| paper_cards/ | complete | 8 篇 core_read 均有 card |
+| gap_analysis.md | consistent | 已给出 Narrow 结论 |
+| adversarial_review.md | consistent | 已更新收窄后的攻击与回应 |
+| experiment_plan.md | ready | MVP 已填写；进入 Phase 4 前仍需用户确认 |
+| decision.md | ready | 当前为 Narrow |
 | file_consistency_check.md | — | 本文件 |
 
 **Status 说明**：consistent = 与当前课题版本一致；outdated = 需同步；risky = 论据可能依赖 uncertain 论文。
@@ -27,15 +27,15 @@
 
 | # | 规则 | Pass? | 说明 |
 |---|------|-------|------|
-| 1 | uncertain 论文不作 gap 核心论据 | Pass | ToolEmu / InjecAgent 仅作待核验线索 |
-| 2 | gap 收窄后 topic_brief 已同步 | Pass | 当前尚未正式收窄 |
-| 3 | gap 认为不能实验时，experiment_plan 未强行填写 | Pass | experiment_plan 仅说明未满足前置条件 |
-| 4 | experiment_plan 有 MVP 时，decision 说明是否进入 pilot | N/A | 尚未写 MVP |
+| 1 | uncertain 论文不作 gap 核心论据 | Pass | MPBench / MINJA / InjecAgent / MemoryBank 仅作背景或待核验线索 |
+| 2 | gap 收窄后 topic_brief 已同步 | Pass | topic_brief v2 已同步新题目 |
+| 3 | gap 认为不能实验时，experiment_plan 未强行填写 | Pass | 当前 gap 允许 Narrow 后写 MVP |
+| 4 | experiment_plan 有 MVP 时，decision 说明是否进入 pilot | Pass | decision 给出 Minimum next step，但尚未进入 Phase 4 Go |
 | 5 | related_work 引用论文均在 paper_table 中 | Pass | 当前引用均来自 paper_table |
-| 6 | core_read=yes 均有 paper_card | Pass | 当前无 core_read=yes |
+| 6 | core_read=yes 均有 paper_card | Pass | 8/8 cards 已创建 |
 | 7 | remove 论文已从 related_work/gap 降级或删除 | N/A | 当前无 remove |
-| 8 | venue/year/title 修正已全库同步 | Pass | 当前按 discovery seed 初始化 |
-| 9 | 课题名称/范围以最新 gap_analysis 为准 | Pass | 当前与 topic_brief v1 一致 |
+| 8 | venue/year/title 修正已全库同步 | Pass | paper_table 与 cards 对齐 |
+| 9 | 课题名称/范围以最新 gap_analysis 为准 | Pass | topic_brief / gap / decision 均为新 scope |
 | 10 | decision=Go 时 experiment_plan 有 data/baseline/metric/MVP | N/A | 当前不是 Go |
 
 ---
@@ -44,24 +44,23 @@
 
 | 字段 | topic_brief | gap_analysis | decision | 是否一致 |
 |------|-------------|--------------|----------|----------|
-| 课题名称 | Transaction-Safe Agent State Boundaries | Transaction-Safe Agent State Boundaries | Hold | 是 |
-| 核心 claim | agent state boundary consistency | tool/memory/credential/branch boundary | Hold | 暂一致 |
-| MVP benchmark | mock tool scenarios | email/payment/file/GitHub-like tasks | Hold | 暂一致 |
-| 当前 Decision | — | 继续进入 Phase 3 深研 | Hold | 是 |
+| 课题名称 | Recovery-Safe Memory Provenance for Tool-Using Agents | Recovery-Safe Memory Provenance for Tool-Using Agents | Narrow | 是 |
+| 核心 claim | recovery 后 memory provenance / validity / quarantine | recovery-induced memory contamination | Narrow | 是 |
+| MVP benchmark | mock tool + memory scenarios | tool observation → memory write → rollback/fork → later retrieval | Narrow | 是 |
+| 当前 Decision | — | Narrow | Narrow | 是 |
 
 ---
 
 ## 4. 发现的问题与待办
 
-1. `paper_table.csv` 需要扩展到 ≥15 篇，并核验 ToolEmu / InjecAgent。
-2. 需要完成 ACRFence、AgentDojo、ASB 等核心 paper cards 后再更新 gap / decision。
-3. 需要补充 memory provenance、stale memory、credential scope 相关论文。
-4. `related_work.md` 需要按 category 完成，不能停留在占位。
+1. Phase 4 前需要用户确认是否按 `experiment_plan.md` 启动 pilot。
+2. 若继续深研，可补充 MPBench / MINJA 作者信息并决定是否升级为 verified core。
+3. 实验实现时需要避免 benchmark 太人工，优先选 email/payment/file/GitHub-like 场景。
 
 ---
 
 ## 5. 审计结论
 
-- [ ] 全部 consistent → 可进入 decision 更新
-- [x] 存在 outdated → 先修复再 decision
-- [x] 存在 risky → 降级相关论据或标记 Hold
+- [x] 全部 consistent → 可进入 decision 更新
+- [ ] 存在 outdated → 先修复再 decision
+- [ ] 存在 risky → 降级相关论据或标记 Hold

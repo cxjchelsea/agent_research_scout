@@ -1,65 +1,64 @@
-# Topic Brief: Transaction-Safe Agent State Boundaries
+# Topic Brief: Recovery-Safe Memory Provenance for Tool-Using Agents
 
-> **版本**：v1
+> **版本**：v2
 > **同步规则**：若 `gap_analysis.md` 收窄课题，本文件必须同步更新。
 
 ---
 
 ## 1. 一句话课题定义
 
-研究 LLM agent 在 checkpoint、rollback、retry 或分支恢复后，如何避免 local agent state 与外部工具副作用、权限令牌、持久记忆之间产生不可见的不一致。
+研究 tool-using LLM agent 在 checkpoint、rollback、retry 或分支恢复后，如何为长期 memory 写入维护 provenance、branch 与 validity 信息，避免污染记忆在恢复后被无声复用。
 
 ## 2. 核心失败模式
 
-Agent 本地状态可以回滚，但外部世界通常不能回滚：邮件已发送、支付已提交、文件已删除、一次性 token 已消费、memory 已写入。恢复后的 agent 可能重新生成语义相近但不完全相同的工具调用，使外部服务把它视为新请求，导致重复副作用、权限复活、污染记忆复用或分支语义混淆。
+Agent 本地执行轨迹可以回滚或分支，但长期 memory / store 往往跨 thread 或跨 session 持久存在。攻击性 observation、错误工具结果或失败分支中的中间结论一旦写入 memory，恢复后的 agent 可能继续检索并信任它，导致污染记忆复用、分支语义混淆和恢复后状态不干净。
 
 ## 3. 为什么重要
 
-真实 agent 系统越来越依赖 checkpoint、human-in-the-loop recovery、自动重试和多分支探索。如果状态边界不清楚，agent 的“恢复能力”会反过来制造安全和可靠性问题：重复执行不可逆操作、复用已失效授权、把攻击内容写入长期记忆，或在不同分支之间泄漏状态。
+真实 agent 系统越来越依赖 checkpoint、human-in-the-loop recovery、自动重试和长期 memory。ACRFence 已指出外部副作用不可自动回滚；AgentPoison、ASB 和 MPBench 说明 memory poisoning 是真实攻击面。两者交界处的问题是：恢复机制可能清理了本地轨迹，却没有清理或隔离已写入的长期 memory。
 
 ## 4. 研究边界
 
 ### 保留
 
-- Tool-effect ledger：记录不可逆工具副作用与结果。
-- Memory provenance：记录长期 memory 的来源、分支、可信度和写入时机。
-- Credential invalidation：处理一次性凭证、短期授权和恢复后的权限复活。
-- Branch / replay semantics：区分同一意图 replay、语义分叉 fork、危险重复执行。
-- 最小 mock tool benchmark：email/payment/file/GitHub-like tasks。
+- Memory provenance：记录 memory item 的来源 observation、tool call、branch id、checkpoint id、写入阶段和可信状态。
+- Recovery / branch semantics：定义哪些 memory 写入可跨分支复用，哪些必须 quarantine、invalidate 或重新验证。
+- Tool-output-to-memory pipeline：关注工具结果、恶意 observation、错误中间结论如何进入长期 memory。
+- 最小 mock benchmark：email/payment/file/GitHub-like tasks 中的 memory write / rollback / retrieval scenarios。
 
 ### 删除（本轮不做）
 
-- 通用 prompt injection 防御。
+- 泛化 external side-effect rollback 防御（ACRFence 已覆盖主要问题）。
+- 通用 prompt injection 或 memory poisoning attack 设计。
 - 完整 agent framework 或生产级 runtime。
 - 大规模 SWE-bench / WebArena 复现实验。
-- 投稿级安全审计或全量 related work 扩库。
 
 ## 5. 研究问题
 
-**RQ1**: 现有 agent checkpoint / retry / recovery 机制在哪些工具副作用、memory 写入和授权状态下会产生不可见不一致？
+**RQ1**: 现有 agent checkpoint / retry / recovery 机制在哪些 memory write / retrieval 场景下会保留失败分支或攻击性 observation 的污染状态？
 
-**RQ2**: 能否用统一的 state boundary 表示（tool-effect ledger + memory provenance + branch semantics）形式化这些失败？
+**RQ2**: 能否用 memory provenance schema（source observation、tool call、branch id、checkpoint id、validity state）形式化这些失败？
 
-**RQ3**: 一个最小 replay-or-fork / quarantine 机制是否能降低重复副作用、权限复活和 memory 污染复用，同时保持合理的 benign recovery success？
+**RQ3**: 一个最小 quarantine / branch-aware retrieval 机制是否能降低 recovery 后的污染记忆复用，同时保持合理的 benign memory utility？
 
 ## 6. 预期贡献
 
-1. 问题贡献：定义 transaction-safe agent state boundary failure taxonomy。
-2. 表示贡献：提出用于工具副作用、memory provenance 与分支恢复的统一状态边界表示。
-3. Benchmark / Method 贡献：构造最小 mock tool benchmark，并比较普通 retry、idempotency-key-only、ACRFence-like replay 与本案机制。
+1. 问题贡献：定义 recovery-induced memory contamination failure mode。
+2. 表示贡献：提出 recovery-safe memory provenance schema。
+3. Benchmark / Method 贡献：构造最小 memory rollback benchmark，并比较普通 persistent memory、prompt guard、ACRFence-like side-effect logging 与 branch-aware memory quarantine。
 
 ## 7. 最危险 related work
 
 | 论文 | 关系 |
 |------|------|
-| ACRFence: Preventing Semantic Rollback Attacks in Agent Checkpoint-Restore | 最大威胁；已直接覆盖 semantic rollback attacks，需要检查是否完整覆盖本案 claim。 |
+| ACRFence: Preventing Semantic Rollback Attacks in Agent Checkpoint-Restore | 最大威胁；覆盖 external side-effect rollback，但未确认覆盖 memory provenance。 |
 | AgentDojo | 工具边界与 adversarial observation benchmark，说明 tool outputs 可劫持 agent。 |
 | Agent Security Bench (ASB) | 覆盖 memory poisoning、tool attacks 和 security-utility trade-off。 |
-| ToolEmu | 外部工具风险模拟相关；需核验是否覆盖 irreversible side effects。 |
-| OpenHands / SWE-agent | 真实 software agent runtime 与 agent-computer interface 场景。 |
+| AgentPoison | 证明长期 memory / RAG poisoning 可以产生未来行为影响。 |
+| MemBench / LoCoMo / Mem0 | 提供长期 memory evaluation 与 memory architecture 语境。 |
 
 ## 8. 当前最大风险
 
-- ACRFence 可能已经覆盖核心 novelty，本课题必须在 Phase 3 中正面比较并收窄到 ACRFence 未覆盖的 memory provenance、credential scope 或 multi-branch workflow。
-- 如果 benchmark 全是 mock tool，可能被认为太人工；需要确保任务足够贴近 email/payment/file/GitHub 等真实工具语义。
-- 如果方法只是 checkpoint + retry + prompt guard 的工程组合，会有 engineering-only 风险。
+- 若 ACRFence 已覆盖 memory provenance 或 store-level rollback，本课题会被削弱，需要 No-Go 或进一步收窄。
+- 如果 benchmark 只证明 memory poisoning，而没有 recovery / branch 变量，会与 ASB / AgentPoison 撞车。
+- 如果方法只是给 memory 加标签而没有改变 retrieval / quarantine 行为，会有 engineering-only 风险。
