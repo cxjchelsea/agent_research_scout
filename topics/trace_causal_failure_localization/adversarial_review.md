@@ -50,6 +50,16 @@
 
 攻击结论：原始 C1 题目基本不应继续，因核心 claim 已被 AgentRx / TraceElephant / TRAIL / Who&When 强覆盖。可考虑收窄为 **Repair-Test Generation from Agent Failure Traces**，但该收窄题仍需继续核验 AgentDebug 和 AgentRx 是否已经自然覆盖。
 
+### Phase 3.5b 补充攻击
+
+| 攻击 | 强度 | 当前判断 |
+|------|------|----------|
+| AgentDebug 已经从 root cause 生成 targeted corrective feedback，并通过 re-rollout 提升 task success | 中高 | 它不等价 executable regression test generation，但会强烈压缩“repair target recommendation”的新颖性。 |
+| AgentRx validation log 已经包含 executable constraints / invariants，可能自然成为 test oracle | 中高 | 它不是完整 regression test artifact，但可作为 oracle / evidence source；本案不能只把 validation log 改名为 test。 |
+| 软件测试领域已有 ReCrash / EvoCrash / Issue2Test / BRT Agent / Echo / iCoRe 等 failure/issue/stack trace → reproducing test 工作 | 高 | 宽泛的 “failure trace → regression test” 已被充分研究；必须转向 agent-specific scenario artifact。 |
+
+补充攻击结论：第一版收窄题 **Repair-Test Generation from Agent Failure Traces** 还不够窄，不能升级为 Promising。较稳妥的再次收窄是 **Agentic Regression Scenarios for Tool-Using Agent Failures**，把输出限定为 agent workflow 可重放场景，而不是传统软件 unit/regression test。
+
 ---
 
 ## 5. 与 decision 的联动
@@ -59,4 +69,5 @@
 | 坚持原始 trace-causal localization claim | No-Go |
 | 收窄到 executable regression-test / repair-target generation | Narrow |
 | 无法证明 AgentDebug / AgentRx 未覆盖收窄题 | No-Go |
-| 收窄题有 20–50 个可构造 examples 且 baseline 清晰 | Narrow → Promising（后续） |
+| 仅做传统软件 failure trace → regression test | No-Go |
+| 再次收窄到 agentic regression scenario，且有 20–50 个可构造 examples | Narrow，可考虑后续 Promising |

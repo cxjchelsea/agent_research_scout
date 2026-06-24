@@ -73,6 +73,28 @@
 
 > 如果最大威胁 work 的 Evidence 为空，或 paper card 未达到 `threat_verified`，不得把 Phase 3 判定为 complete。
 
+### 3.2 Phase 3.5b：收窄题补充核验
+
+| 核验问题 | 结论 | Evidence | Implication |
+|----------|------|----------|-------------|
+| AgentDebug 是否已经覆盖 repair target / executable test generation？ | partial | AgentDebug isolates root-cause failures and provides corrective / actionable feedback, then re-rolls out the agent. It evaluates recovery and task success, but retrieved evidence does not show generation of executable regression tests as standalone artifacts. | 它强覆盖 repair feedback / targeted remediation；收窄题不能只做 natural-language repair target，必须输出可执行 test/scenario artifact。 |
+| AgentRx validation log 是否自然等价于 regression test artifact？ | partial / no | AgentRx synthesizes executable constraints, checks them step-by-step, and outputs validation logs (`checker_results`, `judge_output`). These logs are executable diagnostics/oracles, but not complete tests: they lack standalone setup, replay harness, fail-pass criterion, and patch validation loop. | AgentRx validation log 可作为 oracle / evidence source，但不等价 regression test artifact。收窄题必须显式生成 runnable replay/test case。 |
+| 软件工程 / debugging / test generation 是否已有 failure trace → regression test 强相关工作？ | yes, strong adjacent coverage | ReCrash generates unit tests from preserved object states; EvoCrash uses crash stack traces to generate reproducing tests; Issue2Test / BRT Agent / Echo / iCoRe generate bug reproduction tests from issue reports, stack traces, execution feedback, and repository context. | “failure/bug trace → reproducing/regression test”在传统软件工程里已非常成熟；若本案只做软件 crash/bug reproduction，会 No-Go。必须再次收窄到 agent-specific workflow traces。 |
+
+### 3.3 再次收窄建议
+
+不建议把题目维持为宽泛的 **Repair-Test Generation from Agent Failure Traces**，因为软件测试领域已有强相关传统。更合适的下一版题目是：
+
+**Agentic Regression Scenarios for Tool-Using Agent Failures**
+
+一句话定义：给定 tool-using / multi-step agent 的 failure trace 与诊断证据，生成可重放的 agentic regression scenario（初始环境、用户目标、tool/policy/mock state、预期 failure oracle），用于验证 scaffold / prompt / tool-schema / policy 修复是否阻断同类失败。
+
+这个定义避开传统软件 crash reproduction 的主战场，也区别于 AgentRx / AgentDebug：
+
+- 输出不是自然语言 corrective feedback，而是可运行的 agentic scenario。
+- oracle 不只是 violation log，而是可用于 rerun 的 fail/pass criterion。
+- repair target 不限代码 patch，也包括 prompt、tool schema、policy、memory/retrieval、handoff protocol。
+
 ---
 
 ## 4. 最小可行创新点（MVP）
@@ -87,7 +109,7 @@
 
 ## 5. 当前结论（gap 视角）
 
-**方向判断**：原始方向 No-Go；建议收窄为 **Repair-Test Generation from Agent Failure Traces**，当前 decision 应为 Narrow 而非 Promising。
+**方向判断**：原始方向 No-Go；第一版收窄题被软件测试领域强相关工作压缩，不应升为 Promising。建议再次收窄为 **Agentic Regression Scenarios for Tool-Using Agent Failures**，当前 decision 维持 Narrow。
 
 > 审稿人攻击见 `adversarial_review.md`
 > 文件一致性见 `file_consistency_check.md`
