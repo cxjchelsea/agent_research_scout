@@ -1,6 +1,0 @@
-pyyaml>=6.0
-datasets>=2.14.0
-
-# Install separately (not in this repo):
-#   pip install mini-swe-agent
-# Requires: Docker, model API key (OPENAI_API_KEY / etc.)

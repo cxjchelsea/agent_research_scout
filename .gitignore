@@ -28,15 +28,6 @@ papers/raw/*
 !papers/raw/.gitkeep
 outputs/*
 !outputs/.gitkeep
-!outputs/pilot/
-outputs/pilot/run_log.jsonl
-outputs/pilot/metrics/pilot_summary.json
-outputs/pilot/decision_draft.md
-outputs/pilot/trajectories/**
-outputs/pilot/predictions/**
-!outputs/pilot/trajectories/.gitkeep
-!outputs/pilot/metrics/.gitkeep
-!outputs/pilot/predictions/.gitkeep
 
 # Large / binary files
 *.pdf
