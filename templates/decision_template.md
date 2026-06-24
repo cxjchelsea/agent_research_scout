@@ -6,7 +6,10 @@
 
 ---
 
-## Decision: Go / Narrow / Hold / No-Go
+## Decision: Promising / Narrow / Go / Hold / No-Go
+
+> **Current Phase**：3（Deep Dive）或 4（Quick Proof）
+> Go 仅用于 Phase 4：表示创新点已通过 MVP 验证，值得继续投入。
 
 （一句话说明）
 
@@ -14,7 +17,12 @@
 
 ## Reason
 
-### Go 条件检查
+### Phase 3 条件检查（深研后，尚未 Go）
+
+| # | 条件 | 状态 |
+|---|------|------|
+
+### Phase 4 条件检查（Quick Proof 后，才可 Go）
 
 | # | 条件 | 状态 |
 |---|------|------|
